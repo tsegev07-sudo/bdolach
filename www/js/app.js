@@ -189,6 +189,7 @@
     var i = pages.indexOf(page);
     els.prev.disabled = i <= 0;
     els.next.disabled = i >= pages.length - 1;
+    updateResetButton();
 
     markActiveTab(page.tab);
 
@@ -197,6 +198,12 @@
     var target = headingIndex != null ? els.page.querySelectorAll('.heading')[headingIndex] : null;
     if (target) target.scrollIntoView();
     else els.page.scrollTop = 0;
+  }
+
+  // "נקה סימונים" appears only while something on the page is ticked
+  function updateResetButton() {
+    var t = current && ticks[current.id];
+    els.reset.hidden = !(t && Object.keys(t).some(function (k) { return t[k]; }));
   }
 
   // Table of contents (☰): the headings of the current tab only.
@@ -368,6 +375,7 @@
       item.classList.toggle('done', pageTicks[key]);
       var num = item.querySelector('.item-num');
       num.textContent = pageTicks[key] ? '✓' : (parseInt(key.split('.')[1], 10) + 1) + '.';
+      updateResetButton();
     }
   });
 

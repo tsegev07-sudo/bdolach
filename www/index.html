@@ -32,11 +32,19 @@
 
   <main id="page" class="page" tabindex="-1"></main>
 
-  <footer class="bottombar">
-    <button id="prevBtn" class="nav-btn">→ לעמוד הקודם</button>
-    <button id="resetBtn" class="nav-btn small">נקה סימונים</button>
-    <button id="nextBtn" class="nav-btn">עמוד הבא ←</button>
-  </footer>
+  <!-- Floating page buttons (no bar). As in a Hebrew book:
+       previous page on the right, next page on the left. -->
+  <button id="prevBtn" class="fab fab-prev" aria-label="לעמוד הקודם">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>
+  </button>
+  <button id="nextBtn" class="fab fab-next" aria-label="לעמוד הבא">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>
+  </button>
+  <!-- Shown only when something on the page is ticked -->
+  <button id="resetBtn" class="fab-pill" hidden>
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.4-5.7"/><path d="M4 4v4.5h4.5"/></svg>
+    נקה סימונים
+  </button>
 
   <!-- Pop-up used for note references (the boxed numbers) and messages -->
   <div id="sheet" class="sheet" hidden>
