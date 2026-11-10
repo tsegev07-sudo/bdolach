@@ -11,6 +11,7 @@ Capacitor wraps it as an Android app (APK), and it never needs internet.
 ```
 www/                  ← the app itself (everything that goes into the APK)
   index.html          page skeleton
+  sw.js, manifest.webmanifest, icons/   offline + "Add to Home Screen" support
   css/app.css         all styling (colours, night mode, sizes)
   js/app.js           renders the content, navigation, notes, ticks
   content/
@@ -45,3 +46,15 @@ Alternatively, `npm start` serves it at http://localhost:8080.
    Android asks you to allow installing from that source the first time.
 
 New versions install over the old one, because every build is signed with the same key.
+
+## iPhone / iPad (and any browser)
+
+The same `www/` folder also works as an installable web app (PWA), and it works offline.
+
+1. Host the `www/` folder on any HTTPS address, for example Netlify connected to this repo,
+   with publish directory `www` and no build command.
+2. On the iPhone, open the address in Safari → Share → **Add to Home Screen**.
+3. Open it once while online. After that it runs full screen, with no internet.
+
+`www/sw.js` saves the files on the device. **Whenever you change any file in `www/`, raise `VERSION` in `sw.js`**
+(v1 → v2 …) so phones download the new version. They pick it up the next time the app is opened online.

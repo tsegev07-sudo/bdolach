@@ -270,7 +270,7 @@ button {
 }
 
 /* Keeps numbers, units and English codes in the right order inside Hebrew */
-bdi { unicode-bidi: isolate; }
+bdi { unicode-bidi: isolate; white-space: nowrap; }
 
 /* ---------- Tables ---------- */
 .table {
@@ -433,7 +433,21 @@ bdi { unicode-bidi: isolate; }
 
 /* ---------- Narrow screens (phone / portrait) ---------- */
 @media (max-width: 640px) {
+  body { font-size: calc(17px * var(--font-scale)); }
+  .tab { min-height: 46px; font-size: 17px; }
+  .topbar { gap: 6px; padding: 6px 8px; }
+  .page-header { font-size: 18px; }
+  .page-label { font-size: 13px; }
+  .topbar-tools { gap: 4px; }
+  .icon-btn { min-width: 40px; min-height: 40px; font-size: 16px; }
+  .page { padding: 10px 12px 24px; }
+  .item { gap: 8px; padding: 6px 4px; min-height: 44px; }
+  .item-num { min-width: 1.6em; }
+  .heading { margin-top: 20px; }
+  .table { font-size: 0.8em; }
+  .table th, .table td { padding: 4px; }
   .list.columns-2 { column-count: 1; }
-  .nav-btn { min-width: 0; font-size: 16px; }
-  .topbar-tools .icon-btn { min-width: 40px; }
+  .bottombar { gap: 6px; padding-left: 8px; padding-right: 8px; }
+  .nav-btn { min-width: 0; min-height: 48px; padding: 0 10px; font-size: 15px; white-space: nowrap; }
+  .nav-btn.small { font-size: 13px; }
 }

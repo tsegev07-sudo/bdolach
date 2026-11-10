@@ -424,6 +424,12 @@
     });
   }
 
+  // Offline support when opened from a website (iPhone / browser).
+  // Skipped inside the Android app, which already has every file.
+  if ('serviceWorker' in navigator && !window.Capacitor && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+    navigator.serviceWorker.register('sw.js').catch(function () { /* app still works online */ });
+  }
+
   renderTabs();
   route();
 })();
