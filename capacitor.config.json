@@ -1,0 +1,8 @@
+{
+  "appId": "com.bdolach.sufa",
+  "appName": "בד\"ח סופה",
+  "webDir": "www",
+  "android": {
+    "allowMixedContent": false
+  }
+}

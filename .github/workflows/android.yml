@@ -1,0 +1,47 @@
+# Builds the Android app (APK) on every push.
+# Download it from the run's page on GitHub: Actions -> the run -> Artifacts -> bdolach-apk
+name: Build Android APK
+
+on:
+  push:
+    branches: [main, 'claude/**']
+  workflow_dispatch:
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Install Capacitor
+        run: npm ci
+
+      - name: Create the Android project from www/
+        run: npx cap add android && npx cap sync android
+
+      # Same signing key on every build, so a new APK installs over the old one
+      - name: Use the project's signing key
+        run: mkdir -p ~/.android && cp signing/debug.keystore ~/.android/debug.keystore
+
+      - name: Build APK
+        working-directory: android
+        run: ./gradlew assembleDebug --no-daemon
+
+      - name: Rename APK
+        run: mv android/app/build/outputs/apk/debug/app-debug.apk bdolach.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bdolach-apk
+          path: bdolach.apk
+          retention-days: 30
