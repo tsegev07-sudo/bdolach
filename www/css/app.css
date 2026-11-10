@@ -59,6 +59,7 @@ body {
   line-height: 1.5;
   -webkit-tap-highlight-color: transparent;
   overscroll-behavior: none;
+  overflow-x: hidden; /* never scroll sideways */
 }
 
 button {
@@ -149,6 +150,8 @@ button {
   outline: none;
   /* --fit is set by js/app.js: shrinks the page text so the whole page fits the screen */
   font-size: calc(1em * var(--fit, 1));
+  overflow-x: hidden; /* never scroll sideways */
+  overflow-wrap: anywhere; /* a word wider than the screen breaks instead of overflowing */
 }
 
 .page-inner {
@@ -271,7 +274,11 @@ button {
 }
 
 /* Keeps numbers, units and English codes in the right order inside Hebrew */
-bdi { unicode-bidi: isolate; white-space: nowrap; }
+bdi { unicode-bidi: isolate; }
+
+/* English codes (T-ILS, ANTI ICE + PROBEHEAT) never break in the middle;
+   ordinary sentences, bold ones included, wrap normally */
+bdi.code { white-space: nowrap; }
 
 /* ---------- Tables ---------- */
 .table {

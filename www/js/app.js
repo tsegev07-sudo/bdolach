@@ -89,7 +89,7 @@
     });
 
     var html = escapeHtml(s)
-      .replace(/\u0001/g, '<bdi>')
+      .replace(/\u0001/g, '<bdi class="code">')
       .replace(/\u0002/g, '</bdi>');
 
     html = html.replace(/\*\*(.+?)\*\*/g, '<b><bdi>$1</bdi></b>');
