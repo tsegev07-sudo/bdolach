@@ -8,6 +8,7 @@ var BOOK = {
   subtitle: 'נוהלי חירום',
   edition: 'עדכון 6 · מרץ 2025',
   marking: 'סודי', // classification marking shown next to each page number
+  startTab: 'white', // the tab the app opens on
 
   // Order matches the printed book (right to left).
   // prefix = the page-number prefix used in cross-references, e.g. (חח-43)

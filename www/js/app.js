@@ -3,7 +3,7 @@
  * Reads the content from BOOK (content/*.js) and renders it.
  *
  * Addresses (the part after # in the URL):
- *   #            -> home / table of contents
+ *   (empty)      -> opens the first page of BOOK.startTab
  *   #ל-1         -> page ל-1
  *   #ל-1/h2      -> page ל-1, scrolled to its 3rd heading (counting from 0)
  */
@@ -186,10 +186,11 @@
       page.blocks.map(function (block, b) { return renderBlock(block, b, pageTicks); }).join('') +
       '</div>';
 
-    var i = BOOK.pages.indexOf(page);
+    // Previous / next stay inside the current colour tab
+    var pages = tabPages(page.tab);
+    var i = pages.indexOf(page);
     els.prev.disabled = i <= 0;
-    els.next.disabled = i >= BOOK.pages.length - 1;
-    els.reset.hidden = false;
+    els.next.disabled = i >= pages.length - 1;
 
     markActiveTab(page.tab);
 
@@ -198,45 +199,30 @@
     else els.page.scrollTop = 0;
   }
 
-  function renderHome() {
-    current = null;
-    document.body.dataset.tab = 'white';
-    els.header.textContent = BOOK.title;
-    els.label.textContent = 'תוכן עניינים';
-    els.prev.disabled = true;
-    els.next.disabled = !BOOK.pages.length;
-    els.reset.hidden = true;
-    markActiveTab(null);
+  // Table of contents (☰): the headings of the current tab only.
+  // Other colours are reached only from the tabs at the top.
+  function showToc() {
+    if (!current) return;
+    var tab = findTab(current.tab);
+    var html = '<h2>תוכן עניינים — ' + tab.name + '</h2>';
 
-    var html = '<div class="page-inner">' +
-      '<div class="cover"><h1>' + escapeHtml(BOOK.title) + '</h1>' +
-      '<div class="subtitle">' + escapeHtml(BOOK.subtitle) + '</div>' +
-      '<div class="edition">' + escapeHtml(BOOK.edition) + '</div></div>';
-
-    BOOK.tabs.forEach(function (tab) {
-      html += '<section class="toc-tab"><div class="toc-tab-name" data-tab="' + tab.id + '">' + tab.name + '</div>';
-      var pages = BOOK.pages.filter(function (p) { return p.tab === tab.id; });
-
-      if (!pages.length) {
-        html += '<div class="toc-empty">בקרוב</div>';
-      }
-
-      pages.forEach(function (p) {
-        var h = 0;
-        p.blocks.forEach(function (block) {
-          if (block.type !== 'heading') return;
-          html += '<button class="toc-entry" data-go="' + p.id + '/h' + h + '">' +
-            '<span>' + format(block.text) + '</span>' +
-            '<span class="toc-page"><bdi>' + p.id + '</bdi></span></button>';
-          h++;
-        });
+    tabPages(current.tab).forEach(function (p) {
+      var h = 0;
+      p.blocks.forEach(function (block) {
+        if (block.type !== 'heading') return;
+        html += '<button class="toc-entry" data-go="' + p.id + '/h' + h + '">' +
+          '<span>' + format(block.text) + '</span>' +
+          '<span class="toc-page"><bdi>' + p.id + '</bdi></span></button>';
+        h++;
       });
-
-      html += '</section>';
     });
 
-    els.page.innerHTML = html + '</div>';
-    els.page.scrollTop = 0;
+    openSheet(html);
+  }
+
+  // The pages of one colour tab, in order
+  function tabPages(tabId) {
+    return BOOK.pages.filter(function (p) { return p.tab === tabId; });
   }
 
   function markActiveTab(tabId) {
@@ -311,13 +297,22 @@
     var page = findPage(parts[0]);
     var heading = parts[1] && parts[1][0] === 'h' ? parseInt(parts[1].slice(1), 10) : null;
 
-    if (page) renderPage(page, heading);
-    else renderHome();
+    if (page) {
+      renderPage(page, heading);
+      return;
+    }
+
+    // No page in the address (first launch): open straight into the start tab.
+    // replace() so the back button doesn't return to an empty address.
+    var start = tabPages(BOOK.startTab)[0] || BOOK.pages[0];
+    location.replace('#' + start.id);
+    renderPage(start);
   }
 
   function step(delta) {
-    var i = current ? BOOK.pages.indexOf(current) : -1;
-    var target = BOOK.pages[i + delta];
+    if (!current) return;
+    var pages = tabPages(current.tab);
+    var target = pages[pages.indexOf(current) + delta];
     if (target) go(target.id);
   }
 
@@ -365,8 +360,8 @@
   });
 
   els.prev.addEventListener('click', function () { step(-1); });
-  els.next.addEventListener('click', function () { step(1); }); // from home: first page
-  els.home.addEventListener('click', function () { go(''); });
+  els.next.addEventListener('click', function () { step(1); });
+  els.home.addEventListener('click', showToc);
 
   els.reset.addEventListener('click', function () {
     if (!current) return;
