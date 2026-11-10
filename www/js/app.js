@@ -22,8 +22,6 @@
     reset: $('resetBtn'),
     home: $('homeBtn'),
     night: $('nightBtn'),
-    fontUp: $('fontUp'),
-    fontDown: $('fontDown'),
     sheet: $('sheet'),
     sheetBody: $('sheetBody'),
     sheetClose: $('sheetClose')
@@ -194,6 +192,8 @@
 
     markActiveTab(page.tab);
 
+    fitPage();
+
     var target = headingIndex != null ? els.page.querySelectorAll('.heading')[headingIndex] : null;
     if (target) target.scrollIntoView();
     else els.page.scrollTop = 0;
@@ -223,6 +223,24 @@
   // The pages of one colour tab, in order
   function tabPages(tabId) {
     return BOOK.pages.filter(function (p) { return p.tab === tabId; });
+  }
+
+  // Makes the whole page fit the screen without scrolling, like a page of the
+  // booklet: shrinks the text step by step until nothing overflows.
+  // The text never gets smaller than MIN_TEXT_PX; if the page still doesn't
+  // fit at that size (phone, tablet on its side), the page scrolls instead.
+  var MIN_TEXT_PX = 15;
+
+  function fitPage() {
+    var el = els.page;
+    var fit = 1;
+    el.style.setProperty('--fit', fit);
+    var basePx = parseFloat(getComputedStyle(el).fontSize);
+    var minFit = Math.min(1, MIN_TEXT_PX / basePx);
+    while (el.scrollHeight > el.clientHeight + 1 && fit - 0.03 >= minFit) {
+      fit = Math.round((fit - 0.03) * 100) / 100;
+      el.style.setProperty('--fit', fit);
+    }
   }
 
   function markActiveTab(tabId) {
@@ -323,12 +341,6 @@
     else delete document.documentElement.dataset.theme;
   }
 
-  function applyFontScale(scale) {
-    document.documentElement.style.setProperty('--font-scale', scale);
-  }
-
-  var fontScale = parseFloat(storageGet('fontScale')) || 1;
-  applyFontScale(fontScale);
   applyTheme(storageGet('theme'));
 
   /* ---------------- Events ---------------- */
@@ -375,13 +387,6 @@
     storageSet('theme', night ? 'night' : 'day');
   });
 
-  function changeFont(delta) {
-    fontScale = Math.min(1.6, Math.max(0.8, Math.round((fontScale + delta) * 10) / 10));
-    applyFontScale(fontScale);
-    storageSet('fontScale', fontScale);
-  }
-  els.fontUp.addEventListener('click', function () { changeFont(0.1); });
-  els.fontDown.addEventListener('click', function () { changeFont(-0.1); });
 
   els.sheetClose.addEventListener('click', closeSheet);
   els.sheet.addEventListener('click', function (e) {
@@ -407,6 +412,13 @@
   });
 
   window.addEventListener('hashchange', route);
+
+  // Re-fit when the screen size changes (rotating the tablet)
+  var resizeTimer = null;
+  window.addEventListener('resize', function () {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(fitPage, 100);
+  });
 
   // Android back button (only inside the installed app):
   // close an open note first, otherwise go back a page, otherwise exit.

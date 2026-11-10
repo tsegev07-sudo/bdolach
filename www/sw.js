@@ -5,7 +5,7 @@
  *
  * When you change any file, raise VERSION so devices download the new files.
  */
-var VERSION = 'v3';
+var VERSION = 'v4';
 var CACHE = 'bdolach-' + VERSION;
 
 var FILES = [
