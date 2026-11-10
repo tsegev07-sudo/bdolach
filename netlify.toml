@@ -1,0 +1,10 @@
+# Netlify settings (iPhone / web version). The app lives in www/; there is no build step.
+[build]
+  publish = "www"
+  command = ""
+
+# Always check for a new service worker, so phones get updates
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "no-cache"
