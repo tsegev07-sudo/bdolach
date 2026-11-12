@@ -95,8 +95,11 @@
     html = html.replace(/\*\*(.+?)\*\*/g, '<b><bdi>$1</bdi></b>');
 
     // Note references: ^1, ^2 ...
-    html = html.replace(/\^(\d+)/g, function (m, n) {
-      return '<button class="ref" data-note="' + n + '" aria-label="הערה ' + n + '">' + n + '</button>';
+    // The space before the box becomes a non-breaking space, and the box is
+    // inline text (not a <button>), so it never drops onto a line of its own:
+    // it always wraps together with the word before it.
+    html = html.replace(/\s*\^(\d+)/g, function (m, n) {
+      return ' <span class="ref" role="button" tabindex="0" data-note="' + n + '" aria-label="הערה ' + n + '">' + n + '</span>';
     });
 
     html = html.replace(/\u0003(.+?)\u0004/g, function (m, id) {
@@ -379,14 +382,29 @@
     }
   });
 
+  // Note boxes can also be opened from a keyboard
+  document.addEventListener('keydown', function (e) {
+    var ref = e.target.closest && e.target.closest('.ref');
+    if (ref && (e.key === 'Enter' || e.key === ' ')) {
+      e.preventDefault();
+      showNote(parseInt(ref.dataset.note, 10));
+    }
+  });
+
   els.prev.addEventListener('click', function () { step(-1); });
   els.next.addEventListener('click', function () { step(1); });
   els.home.addEventListener('click', showToc);
 
+  // Clears the ticks in place (no redraw), so the page stays where it is
+  // instead of jumping back to the top
   els.reset.addEventListener('click', function () {
     if (!current) return;
     delete ticks[current.id];
-    renderPage(current);
+    els.page.querySelectorAll('.item.done').forEach(function (item) {
+      item.classList.remove('done');
+      item.querySelector('.item-num').textContent = (parseInt(item.dataset.key.split('.')[1], 10) + 1) + '.';
+    });
+    updateResetButton();
   });
 
   els.night.addEventListener('click', function () {

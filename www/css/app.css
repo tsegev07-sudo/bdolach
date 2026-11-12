@@ -101,11 +101,25 @@ button {
 .tab[data-tab="white"]  { background: var(--white); }
 .tab[data-tab="green"]  { background: var(--green); }
 .tab[data-tab="red"]    { background: var(--red); }
-:root[data-theme="night"] .tab { color: var(--text); }
 
 .tab.active { filter: none; }
-:root[data-theme="night"] .tab { filter: brightness(0.8) saturate(0.7); }
-:root[data-theme="night"] .tab.active { filter: brightness(1.45); }
+
+/* Night: the other tabs fade almost into the dark bar, and the open tab
+   switches to a clearly lighter shade of its colour with bright bold text */
+:root[data-theme="night"] .tab {
+  filter: brightness(0.6) saturate(0.6);
+  color: var(--muted);
+  font-weight: 600;
+}
+:root[data-theme="night"] .tab.active {
+  filter: none;
+  color: #ffffff;
+  font-weight: 800;
+}
+:root[data-theme="night"] .tab.active[data-tab="yellow"] { background: #85852a; }
+:root[data-theme="night"] .tab.active[data-tab="white"]  { background: #5f656d; }
+:root[data-theme="night"] .tab.active[data-tab="green"]  { background: #357a2e; }
+:root[data-theme="night"] .tab.active[data-tab="red"]    { background: #8a3f3f; }
 
 /* A tab with no pages yet: dimmer still */
 .tab:disabled {
@@ -256,21 +270,18 @@ button {
 .list.notes .item:active { background: none; }
 
 /* ---------- Inline elements ---------- */
+/* Inline text, not a block, so it wraps together with the word before it */
 .ref {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 1.6em;
-  height: 1.6em;
-  margin: 0 4px;
-  padding: 0 4px;
+  display: inline;
+  margin: 0 0.15em;
+  padding: 0.1em 0.4em;
   border: 2px solid var(--text);
   border-radius: 4px;
   background: var(--chip-bg);
   font-size: 0.9em;
   font-weight: 700;
-  line-height: 1;
-  vertical-align: middle;
+  white-space: nowrap;
+  cursor: pointer;
 }
 
 .link {
