@@ -6,6 +6,10 @@
  *   (empty)      -> opens the first page of BOOK.startTab
  *   #ל-1         -> page ל-1
  *   #ל-1/h2      -> page ל-1, scrolled to its 3rd heading (counting from 0)
+ *   #ל-3/n2      -> the page with the tab's notes, scrolled to note 2 (highlighted)
+ *
+ * Every page you open is added to the history, so "חזור" (and the Android
+ * back button) returns to the page you were on before, at the same spot.
  */
 (function () {
   'use strict';
@@ -17,7 +21,7 @@
     page: $('page'),
     header: $('pageHeader'),
     label: $('pageLabel'),
-    prev: $('prevBtn'),
+    back: $('backBtn'),
     next: $('nextBtn'),
     reset: $('resetBtn'),
     home: $('homeBtn'),
@@ -175,7 +179,8 @@
     }
   }
 
-  function renderPage(page, headingIndex) {
+  // target: { heading: n } or { note: n } to scroll to; scroll: a saved position
+  function renderPage(page, target, scroll) {
     current = page;
     document.body.dataset.tab = page.tab;
     var pageTicks = ticks[page.id] || {};
@@ -187,20 +192,30 @@
       page.blocks.map(function (block, b) { return renderBlock(block, b, pageTicks); }).join('') +
       '</div>';
 
-    // Previous / next stay inside the current colour tab
+    // "המשך" stays inside the current colour tab; "חזור" needs somewhere to go back to
     var pages = tabPages(page.tab);
-    var i = pages.indexOf(page);
-    els.prev.disabled = i <= 0;
-    els.next.disabled = i >= pages.length - 1;
+    els.next.disabled = pages.indexOf(page) >= pages.length - 1;
+    els.back.disabled = depth <= 0;
     updateResetButton();
 
     markActiveTab(page.tab);
 
     fitPage();
 
-    var target = headingIndex != null ? els.page.querySelectorAll('.heading')[headingIndex] : null;
-    if (target) target.scrollIntoView();
-    else els.page.scrollTop = 0;
+    target = target || {};
+    var el = null;
+    if (target.heading != null) {
+      el = els.page.querySelectorAll('.heading')[target.heading];
+      if (el) el.scrollIntoView();
+    } else if (target.note != null) {
+      var notes = els.page.querySelector('.list.notes');
+      el = notes && notes.children[target.note - 1];
+      if (el) {
+        el.scrollIntoView({ block: 'center' });
+        el.classList.add('flash'); // briefly highlights the note that was tapped
+      }
+    }
+    if (!el) els.page.scrollTop = scroll || 0;
   }
 
   // "נקה סימונים" appears only while something on the page is ticked
@@ -269,31 +284,17 @@
       for (var b = 0; b < page.blocks.length; b++) {
         var block = page.blocks[b];
         if (block.type === 'list' && block.notes && block.items[n - 1]) {
-          return { page: page, item: block.items[n - 1], heading: headingIndexBefore(page, b) };
+          return { page: page, item: block.items[n - 1] };
         }
       }
     }
     return null;
   }
 
-  function headingIndexBefore(page, blockIndex) {
-    var h = -1;
-    for (var b = 0; b < blockIndex; b++) {
-      if (page.blocks[b].type === 'heading') h++;
-    }
-    return h < 0 ? null : h;
-  }
-
+  // A boxed note number opens the notes page of this tab, at that note
   function showNote(n) {
     var note = current && findNote(current.tab, n);
-    if (!note) return;
-
-    var goto = note.page.id + (note.heading != null ? '/h' + note.heading : '');
-    openSheet(
-      '<h2>הערה ' + n + '</h2>' +
-      '<div>' + renderItemBody(note.item) + '</div>' +
-      '<button class="go-btn" data-go="' + goto + '">לכל ההערות (<bdi>' + note.page.id + '</bdi>)</button>'
-    );
+    if (note) go(note.page.id + '/n' + n);
   }
 
   function openSheet(html) {
@@ -307,6 +308,14 @@
 
   /* ---------------- Navigation ---------------- */
 
+  // How many pages back "חזור" can go (0 = this is the first page opened)
+  var depth = 0;
+
+  function currentAddress() {
+    return decodeURIComponent(location.hash.slice(1));
+  }
+
+  // Opens a page and adds it to the history
   function go(address) {
     var id = address.split('/')[0];
     if (id && !findPage(id)) {
@@ -314,27 +323,48 @@
       return;
     }
     closeSheet();
-    // Changing the hash adds a history entry, so the Android back button works
-    if (location.hash.slice(1) === address) route();
-    else location.hash = address;
+    // Remember where this page was scrolled to, for when "חזור" returns here
+    history.replaceState({ depth: depth, scroll: els.page.scrollTop }, '', location.hash);
+    depth++;
+    history.pushState({ depth: depth }, '', '#' + address);
+    show(address);
   }
 
-  function route() {
-    var address = decodeURIComponent(location.hash.slice(1));
+  // Shows the page in an address: "ל-1", "ל-1/h2" (heading) or "ל-3/n2" (note)
+  function show(address, scroll) {
     var parts = address.split('/');
     var page = findPage(parts[0]);
-    var heading = parts[1] && parts[1][0] === 'h' ? parseInt(parts[1].slice(1), 10) : null;
+    if (!page) return false;
+    var kind = parts[1] && parts[1][0];
+    var n = parts[1] ? parseInt(parts[1].slice(1), 10) : null;
+    var target = kind === 'h' ? { heading: n } : kind === 'n' ? { note: n } : null;
+    renderPage(page, target, scroll);
+    return true;
+  }
 
-    if (page) {
-      renderPage(page, heading);
-      return;
-    }
+  // "חזור" and the Android back button land here, as does editing the address
+  window.addEventListener('popstate', function (e) {
+    closeSheet();
+    depth = (e.state && e.state.depth) || 0;
+    // Returning to a page: back to the same spot, without highlighting the note again
+    var address = currentAddress();
+    if (e.state && e.state.scroll != null) address = address.split('/')[0];
+    show(address, e.state && e.state.scroll);
+  });
 
-    // No page in the address (first launch): open straight into the start tab.
-    // replace() so the back button doesn't return to an empty address.
-    var start = tabPages(BOOK.startTab)[0] || BOOK.pages[0];
-    location.replace('#' + start.id);
-    renderPage(start);
+  function back() {
+    if (depth > 0) history.back();
+  }
+
+  function start() {
+    depth = (history.state && history.state.depth) || 0;
+    if (show(currentAddress(), history.state && history.state.scroll)) return;
+
+    // No page in the address (first launch): open straight into the start tab
+    var first = tabPages(BOOK.startTab)[0] || BOOK.pages[0];
+    depth = 0;
+    history.replaceState({ depth: 0 }, '', '#' + first.id);
+    renderPage(first);
   }
 
   function step(delta) {
@@ -391,7 +421,7 @@
     }
   });
 
-  els.prev.addEventListener('click', function () { step(-1); });
+  els.back.addEventListener('click', back);
   els.next.addEventListener('click', function () { step(1); });
   els.home.addEventListener('click', showToc);
 
@@ -437,7 +467,6 @@
     }
   });
 
-  window.addEventListener('hashchange', route);
 
   // Re-fit when the screen size changes (rotating the tablet)
   var resizeTimer = null;
@@ -446,15 +475,54 @@
     resizeTimer = setTimeout(fitPage, 100);
   });
 
-  // Android back button (only inside the installed app):
-  // close an open note first, otherwise go back a page, otherwise exit.
-  var capApp = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App;
-  if (capApp) {
-    capApp.addListener('backButton', function (e) {
+  /* ---------------- Keep the screen on ---------------- */
+
+  // The screen never turns off while the app is open.
+  // Android app: the KeepAwake plugin (below). iPhone / browser: the Wake Lock
+  // API, which the browser drops whenever the app is hidden, so it is asked
+  // for again each time the app comes back to the screen.
+  var wakeLock = null;
+
+  function keepScreenOn() {
+    if (!('wakeLock' in navigator) || wakeLock || document.visibilityState !== 'visible') return;
+    navigator.wakeLock.request('screen').then(function (lock) {
+      wakeLock = lock;
+      lock.addEventListener('release', function () { wakeLock = null; });
+    }).catch(function () { /* not allowed right now; tried again on the next tap */ });
+  }
+
+  if (!window.Capacitor) {
+    keepScreenOn();
+    document.addEventListener('visibilitychange', keepScreenOn);
+    // Some browsers only allow it after the first tap
+    document.addEventListener('click', keepScreenOn);
+  }
+
+  /* ---------------- Android app ---------------- */
+
+  // Inside the Android app, Capacitor's JavaScript (js/capacitor.js, copied in
+  // when the APK is built) gives access to the native plugins.
+  function initAndroid() {
+    var cap = window.Capacitor;
+    if (!cap || !cap.registerPlugin) return;
+
+    cap.registerPlugin('KeepAwake').keepAwake();
+
+    // Back button: close an open pop-up first, otherwise go back a page
+    // (same as "חזור"), otherwise leave the app.
+    var app = cap.registerPlugin('App');
+    app.addListener('backButton', function () {
       if (!els.sheet.hidden) closeSheet();
-      else if (e.canGoBack) history.back();
-      else capApp.exitApp();
+      else if (depth > 0) history.back();
+      else app.exitApp();
     });
+  }
+
+  if (window.Capacitor) {
+    var capScript = document.createElement('script');
+    capScript.src = 'js/capacitor.js';
+    capScript.onload = initAndroid;
+    document.head.appendChild(capScript);
   }
 
   // Offline support when opened from a website (iPhone / browser).
@@ -464,5 +532,5 @@
   }
 
   renderTabs();
-  route();
+  start();
 })();

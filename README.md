@@ -28,7 +28,7 @@ All content lives in `www/content/`. Each tab has its own file, which calls `BOO
 The top of `white.js` explains the format:
 
 - `**bold**` — bold text
-- `^1` — boxed note reference; tap it to show note 1 of the tab
+- `^1` — boxed note reference; tapping it opens the tab's notes page at note 1 ("חזור" returns)
 - `(חח-43)` — becomes a link to that page. If the page isn't in the app yet, the link is grey and says so.
 
 To add a new tab, create `www/content/<tab>.js` and add a `<script>` line for it in `www/index.html`.
@@ -46,6 +46,9 @@ Alternatively, `npm start` serves it at http://localhost:8080.
    Android asks you to allow installing from that source the first time.
 
 New versions install over the old one, because every build is signed with the same key.
+
+The app keeps the screen on while it is open (Android: the KeepAwake plugin; iPhone/browser: the Wake Lock API).
+The build copies Capacitor's JavaScript into `www/js/capacitor.js`; that file is not kept in the repo.
 
 ## iPhone / iPad (and any browser)
 

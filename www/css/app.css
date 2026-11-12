@@ -343,14 +343,16 @@ bdi.code { white-space: nowrap; }
 
 .fab {
   bottom: calc(18px + env(safe-area-inset-bottom));
-  width: 64px;
-  height: 64px;
-  padding: 0;
-  border-radius: 50%;
+  gap: 6px;
+  height: 60px;
+  padding: 0 22px;
+  border-radius: 30px;
+  font-size: 20px;
+  font-weight: 700;
 }
 
-.fab-prev { right: max(18px, env(safe-area-inset-right)); }
-.fab-next { left: max(18px, env(safe-area-inset-left)); }
+.fab-back { right: max(18px, env(safe-area-inset-right)); padding-right: 14px; }
+.fab-next { left: max(18px, env(safe-area-inset-left)); padding-left: 14px; }
 
 .fab svg,
 .fab-pill svg {
@@ -361,9 +363,9 @@ bdi.code { white-space: nowrap; }
   stroke-linejoin: round;
 }
 
-.fab svg { width: 30px; height: 30px; }
+.fab svg { width: 28px; height: 28px; }
 
-/* First / last page: the button disappears instead of greying out */
+/* Nothing to go back to / last page: the button disappears instead of greying out */
 .fab:disabled {
   opacity: 0;
   pointer-events: none;
@@ -397,6 +399,14 @@ bdi.code { white-space: nowrap; }
   color: #fff;
 }
 
+/* The note a boxed number led to: highlighted for a moment */
+.item.flash { animation: flash 3s ease-out; }
+
+@keyframes flash {
+  0%, 50% { background: rgba(255, 193, 7, 0.45); }
+  100% { background: transparent; }
+}
+
 /* ---------- Table of contents (inside the pop-up) ---------- */
 .toc-entry {
   display: flex;
@@ -412,7 +422,7 @@ bdi.code { white-space: nowrap; }
 
 .toc-entry .toc-page { color: var(--muted); }
 
-/* ---------- Pop-up sheet (notes) ---------- */
+/* ---------- Pop-up sheet (table of contents, messages) ---------- */
 .sheet {
   position: fixed;
   inset: 0;
@@ -455,16 +465,6 @@ bdi.code { white-space: nowrap; }
   font-size: 1.1em;
 }
 
-.sheet .go-btn {
-  margin-top: 16px;
-  min-height: 48px;
-  padding: 0 18px;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  background: transparent;
-  color: var(--accent);
-  font-weight: 700;
-}
 
 /* ---------- Narrow screens (phone / portrait) ---------- */
 @media (max-width: 640px) {
@@ -481,9 +481,10 @@ bdi.code { white-space: nowrap; }
   .table { font-size: 0.8em; }
   .table th, .table td { padding: 4px; }
   .list.columns-2 { column-count: 1; }
-  .fab { width: 54px; height: 54px; bottom: calc(14px + env(safe-area-inset-bottom)); }
-  .fab-prev { right: max(14px, env(safe-area-inset-right)); }
-  .fab-next { left: max(14px, env(safe-area-inset-left)); }
-  .fab svg { width: 26px; height: 26px; }
-  .fab-pill { height: 40px; font-size: 15px; bottom: calc(21px + env(safe-area-inset-bottom)); }
+  .fab { height: 52px; padding: 0 18px; font-size: 18px; bottom: calc(14px + env(safe-area-inset-bottom)); }
+  .fab-back { right: max(14px, env(safe-area-inset-right)); padding-right: 10px; }
+  .fab-next { left: max(14px, env(safe-area-inset-left)); padding-left: 10px; }
+  .fab svg { width: 24px; height: 24px; }
+  /* No room between "חזור" and "המשך": the pill sits just above them */
+  .fab-pill { height: 40px; font-size: 15px; bottom: calc(76px + env(safe-area-inset-bottom)); }
 }

@@ -26,6 +26,11 @@ jobs:
       - name: Install Capacitor
         run: npm ci
 
+      # The app has no build step, so Capacitor's own JavaScript (needed for the
+      # back button and keeping the screen on) is copied in here
+      - name: Add Capacitor's JavaScript to www/
+        run: cp node_modules/@capacitor/core/dist/capacitor.js www/js/capacitor.js
+
       - name: Create the Android project from www/
         run: npx cap add android && npx cap sync android
 
