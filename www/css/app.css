@@ -343,16 +343,14 @@ bdi.code { white-space: nowrap; }
 
 .fab {
   bottom: calc(18px + env(safe-area-inset-bottom));
-  gap: 6px;
-  height: 60px;
-  padding: 0 22px;
-  border-radius: 30px;
-  font-size: 20px;
-  font-weight: 700;
+  width: 64px;
+  height: 64px;
+  padding: 0;
+  border-radius: 50%;
 }
 
-.fab-back { right: max(18px, env(safe-area-inset-right)); padding-right: 14px; }
-.fab-next { left: max(18px, env(safe-area-inset-left)); padding-left: 14px; }
+.fab-back { right: max(18px, env(safe-area-inset-right)); }
+.fab-next { left: max(18px, env(safe-area-inset-left)); }
 
 .fab svg,
 .fab-pill svg {
@@ -363,7 +361,7 @@ bdi.code { white-space: nowrap; }
   stroke-linejoin: round;
 }
 
-.fab svg { width: 28px; height: 28px; }
+.fab svg { width: 30px; height: 30px; }
 
 /* Nothing to go back to / last page: the button disappears instead of greying out */
 .fab:disabled {
@@ -481,10 +479,9 @@ bdi.code { white-space: nowrap; }
   .table { font-size: 0.8em; }
   .table th, .table td { padding: 4px; }
   .list.columns-2 { column-count: 1; }
-  .fab { height: 52px; padding: 0 18px; font-size: 18px; bottom: calc(14px + env(safe-area-inset-bottom)); }
-  .fab-back { right: max(14px, env(safe-area-inset-right)); padding-right: 10px; }
-  .fab-next { left: max(14px, env(safe-area-inset-left)); padding-left: 10px; }
-  .fab svg { width: 24px; height: 24px; }
-  /* No room between "חזור" and "המשך": the pill sits just above them */
-  .fab-pill { height: 40px; font-size: 15px; bottom: calc(76px + env(safe-area-inset-bottom)); }
+  .fab { width: 54px; height: 54px; bottom: calc(14px + env(safe-area-inset-bottom)); }
+  .fab-back { right: max(14px, env(safe-area-inset-right)); }
+  .fab-next { left: max(14px, env(safe-area-inset-left)); }
+  .fab svg { width: 26px; height: 26px; }
+  .fab-pill { height: 40px; font-size: 15px; bottom: calc(21px + env(safe-area-inset-bottom)); }
 }
