@@ -24,6 +24,7 @@
     back: $('backBtn'),
     next: $('nextBtn'),
     reset: $('resetBtn'),
+    undo: $('undoBtn'),
     home: $('homeBtn'),
     night: $('nightBtn'),
     sheet: $('sheet'),
@@ -151,6 +152,8 @@
   function renderBlock(block, b, pageTicks) {
     switch (block.type) {
       case 'title':
+        // The top bar already shows this page's header: don't repeat it
+        if (current && block.text === current.header) return '';
         return '<h1 class="title">' + format(block.text) + '</h1>';
 
       case 'heading':
@@ -169,7 +172,9 @@
           var done = !block.notes && pageTicks[key];
           return '<li class="item' + (done ? ' done' : '') + '"' +
             (block.notes ? '' : ' data-key="' + key + '"') + '>' +
-            '<span class="item-num">' + (done ? '✓' : (i + 1) + '.') + '</span>' +
+            // A ticked step keeps its number (shown with a ✓), so the crew
+            // can still say "we're at step 3"
+            '<span class="item-num">' + (i + 1) + '</span>' +
             '<div class="item-body">' + renderItemBody(item) + '</div>' +
             '</li>';
         }).join('') + '</ol>';
@@ -181,6 +186,7 @@
 
   // target: { heading: n } or { note: n } to scroll to; scroll: a saved position
   function renderPage(page, target, scroll) {
+    if (current !== page) hideUndo();
     current = page;
     document.body.dataset.tab = page.tab;
     var pageTicks = ticks[page.id] || {};
@@ -235,7 +241,8 @@
       var h = 0;
       p.blocks.forEach(function (block) {
         if (block.type !== 'heading') return;
-        html += '<button class="toc-entry" data-go="' + p.id + '/h' + h + '">' +
+        var here = p === current ? ' current' : '';
+        html += '<button class="toc-entry' + here + '" data-go="' + p.id + '/h' + h + '">' +
           '<span>' + format(block.text) + '</span>' +
           '<span class="toc-page"><bdi>' + p.id + '</bdi></span></button>';
         h++;
@@ -252,6 +259,7 @@
 
   // Makes the whole page fit the screen without scrolling, like a page of the
   // booklet: shrinks the text step by step until nothing overflows.
+  // (On a wide screen the page is in two columns, see app.css.)
   // The text never gets smaller than MIN_TEXT_PX; if the page still doesn't
   // fit at that size (phone, tablet on its side), the page scrolls instead.
   var MIN_TEXT_PX = 15;
@@ -259,12 +267,21 @@
   function fitPage() {
     var el = els.page;
     var fit = 1;
+    el.classList.remove('one-column');
     el.style.setProperty('--fit', fit);
     var basePx = parseFloat(getComputedStyle(el).fontSize);
     var minFit = Math.min(1, MIN_TEXT_PX / basePx);
     while (el.scrollHeight > el.clientHeight + 1 && fit - 0.03 >= minFit) {
       fit = Math.round((fit - 0.03) * 100) / 100;
       el.style.setProperty('--fit', fit);
+    }
+    // Still doesn't fit at the smallest size: smaller text gains nothing,
+    // so keep the full size and let the page scroll. In one column, so the
+    // page reads straight down (two columns would mean scrolling down the
+    // first, then back up for the second).
+    if (el.scrollHeight > el.clientHeight + 1) {
+      el.classList.add('one-column');
+      el.style.setProperty('--fit', 1);
     }
   }
 
@@ -385,9 +402,13 @@
 
   /* ---------------- Settings ---------------- */
 
+  // The button shows the mode it switches to: ☾ by day, ☀ at night
   function applyTheme(theme) {
-    if (theme === 'night') document.documentElement.dataset.theme = 'night';
+    var night = theme === 'night';
+    if (night) document.documentElement.dataset.theme = 'night';
     else delete document.documentElement.dataset.theme;
+    els.night.textContent = night ? '☀' : '☾';
+    els.night.setAttribute('aria-label', night ? 'מצב יום' : 'מצב לילה');
   }
 
   applyTheme(storageGet('theme'));
@@ -415,8 +436,6 @@
       var key = item.dataset.key;
       pageTicks[key] = !pageTicks[key];
       item.classList.toggle('done', pageTicks[key]);
-      var num = item.querySelector('.item-num');
-      num.textContent = pageTicks[key] ? '✓' : (parseInt(key.split('.')[1], 10) + 1) + '.';
       updateResetButton();
     }
   });
@@ -434,16 +453,45 @@
   els.next.addEventListener('click', function () { step(1); });
   els.home.addEventListener('click', showToc);
 
-  // Clears the ticks in place (no redraw), so the page stays where it is
+  // Shows the page's ticks without redrawing it, so it stays where it is
   // instead of jumping back to the top
-  els.reset.addEventListener('click', function () {
-    if (!current) return;
-    delete ticks[current.id];
-    els.page.querySelectorAll('.item.done').forEach(function (item) {
-      item.classList.remove('done');
-      item.querySelector('.item-num').textContent = (parseInt(item.dataset.key.split('.')[1], 10) + 1) + '.';
+  function applyTicks() {
+    var t = (current && ticks[current.id]) || {};
+    els.page.querySelectorAll('.item[data-key]').forEach(function (item) {
+      item.classList.toggle('done', !!t[item.dataset.key]);
     });
     updateResetButton();
+  }
+
+  // "נקה סימונים" can be undone for a few seconds, so a slip of the finger
+  // mid-procedure doesn't lose the crew's place
+  var UNDO_MS = 6000;
+  var undoState = null; // { page, ticks, timer }
+
+  function hideUndo() {
+    if (undoState) clearTimeout(undoState.timer);
+    undoState = null;
+    els.undo.hidden = true;
+  }
+
+  els.reset.addEventListener('click', function () {
+    if (!current) return;
+    hideUndo();
+    undoState = {
+      page: current,
+      ticks: ticks[current.id],
+      timer: setTimeout(hideUndo, UNDO_MS)
+    };
+    delete ticks[current.id];
+    applyTicks();
+    els.undo.hidden = false;
+  });
+
+  els.undo.addEventListener('click', function () {
+    if (!undoState || undoState.page !== current) { hideUndo(); return; }
+    ticks[current.id] = undoState.ticks;
+    hideUndo();
+    applyTicks();
   });
 
   els.night.addEventListener('click', function () {

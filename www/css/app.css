@@ -29,8 +29,9 @@
   --green: #1f4a1c;
   --red: #4f2626;
 
-  --text: #e6e6e6;
-  --muted: #a8a8a8;
+  /* Softer than white, so the screen doesn't glare in a dark cockpit */
+  --text: #c4c4c4;
+  --muted: #959595;
   --line: #5f6368;
   --bar-bg: #0d1117;
   --bar-text: #d0d0d0;
@@ -50,6 +51,14 @@ body[data-tab="white"]  { --bg: var(--white); }
 body[data-tab="green"]  { --bg: var(--green); }
 body[data-tab="red"]    { --bg: var(--red); }
 :root[data-theme="night"] body { --bg: #16181b; }
+
+/* Night: the page is dark for every tab, so a line in the tab's colour
+   under the top bar keeps the colour cue */
+:root[data-theme="night"] body[data-tab="yellow"] { --tab-edge: #85852a; }
+:root[data-theme="night"] body[data-tab="white"]  { --tab-edge: #5f656d; }
+:root[data-theme="night"] body[data-tab="green"]  { --tab-edge: #357a2e; }
+:root[data-theme="night"] body[data-tab="red"]    { --tab-edge: #8a3f3f; }
+:root[data-theme="night"] .topbar { border-bottom: 4px solid var(--tab-edge, var(--line)); }
 
 * { box-sizing: border-box; }
 
@@ -107,8 +116,8 @@ button {
 /* Night: the other tabs fade almost into the dark bar, and the open tab
    switches to a clearly lighter shade of its colour with bright bold text */
 :root[data-theme="night"] .tab {
-  filter: brightness(0.6) saturate(0.6);
-  color: var(--muted);
+  filter: none;
+  color: #c8c8c8;
   font-weight: 600;
 }
 :root[data-theme="night"] .tab.active {
@@ -121,10 +130,18 @@ button {
 :root[data-theme="night"] .tab.active[data-tab="green"]  { background: #357a2e; }
 :root[data-theme="night"] .tab.active[data-tab="red"]    { background: #8a3f3f; }
 
-/* A tab with no pages yet: dimmer still */
+/* A tab with no pages yet: dimmer still, and marked "בקרוב" (coming soon) */
 .tab:disabled {
-  opacity: 0.6;
+  opacity: 0.75;
   cursor: default;
+  line-height: 1.15;
+}
+
+.tab:disabled::after {
+  content: 'בקרוב';
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
 }
 
 /* ---------- Top bar ---------- */
@@ -193,8 +210,8 @@ button {
 }
 
 .heading {
-  margin: 1.2em 0 0.3em;
-  font-size: 1.1em;
+  margin: 1.1em 0 0.35em;
+  font-size: 1.3em;
   font-weight: 800;
   text-decoration: underline;
   text-underline-offset: 4px;
@@ -229,32 +246,55 @@ button {
   display: flex;
   gap: 0.6em;
   align-items: flex-start;
-  min-height: 2.2em;
   padding: 0.3em 0.5em;
   border-radius: 10px;
   user-select: none;
 }
 
+/* Tickable rows: a tap target in pixels (at least 44px, Apple's minimum),
+   so it never shrinks with the text. Note-only rows aren't tapped. */
+.item[data-key] {
+  min-height: 44px;
+  padding-top: 7px;
+  padding-bottom: 7px;
+}
+
+.item[data-key] + .item[data-key] { margin-top: 2px; }
+
 .item:active { background: rgba(127, 127, 127, 0.15); }
 
 .item-num {
   flex: none;
-  min-width: 2em;
+  /* Wide enough for "✓ 12", so ticking doesn't move the text */
+  min-width: 2.6em;
+  border-radius: 1em;
   font-weight: 700;
   text-align: center;
 }
 
+.item-num::after { content: '.'; }
+
 .item-body { flex: 1; }
 
-/* A ticked item: dimmed, with a check mark instead of the number */
+/* A ticked item: dimmed and crossed out, still readable; its number stays,
+   with a check mark, on a green background */
 .item.done .item-body {
-  opacity: 0.45;
+  opacity: 0.6;
   text-decoration: line-through;
   text-decoration-thickness: 1px;
 }
 
 .item.done .item-num {
-  color: var(--done);
+  background: var(--done);
+  color: #ffffff;
+}
+
+.item.done .item-num::before { content: '✓ '; }
+.item.done .item-num::after { content: ''; }
+
+:root[data-theme="night"] .item.done .item-num {
+  background: #2e5e31;
+  color: #e0e0e0;
 }
 
 .sub {
@@ -272,6 +312,7 @@ button {
 /* ---------- Inline elements ---------- */
 /* Inline text, not a block, so it wraps together with the word before it */
 .ref {
+  position: relative;
   display: inline;
   margin: 0 0.15em;
   padding: 0.1em 0.4em;
@@ -282,6 +323,17 @@ button {
   font-weight: 700;
   white-space: nowrap;
   cursor: pointer;
+}
+
+/* Invisible, larger tap area around the small box (at least 44 x 44px) */
+.ref::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: max(100%, 44px);
+  height: max(100%, 44px);
+  transform: translate(-50%, -50%);
 }
 
 .link {
@@ -420,6 +472,13 @@ bdi.code { white-space: nowrap; }
 
 .toc-entry .toc-page { color: var(--muted); }
 
+/* The open page's sections: marked with a bar on the right */
+.toc-entry.current {
+  box-shadow: inset -5px 0 0 var(--accent);
+  background: rgba(127, 127, 127, 0.12);
+  font-weight: 700;
+}
+
 /* ---------- Pop-up sheet (table of contents, messages) ---------- */
 .sheet {
   position: fixed;
@@ -464,6 +523,32 @@ bdi.code { white-space: nowrap; }
 }
 
 
+/* ---------- Wide screens (tablet on its side) ---------- */
+/* The page flows into two columns, right then left like the book,
+   so it fits at full text size instead of shrinking */
+@media (orientation: landscape) and (min-width: 900px) {
+  .page-inner {
+    max-width: 1500px;
+    column-count: 2;
+    column-gap: 48px;
+    column-rule: 1px dashed var(--line);
+  }
+  .title { column-span: all; }
+  .heading { break-after: avoid; }
+  .item, .table, .sub { break-inside: avoid; }
+  /* A two-column list inside a column would be too narrow */
+  .list.columns-2 { column-count: 1; }
+
+  /* A page too long to fit even in two columns: one column that scrolls
+     (set by js/app.js) */
+  .page.one-column .page-inner {
+    max-width: 900px;
+    column-count: auto;
+    column-rule: none;
+  }
+  .page.one-column .list.columns-2 { column-count: 2; }
+}
+
 /* ---------- Narrow screens (phone / portrait) ---------- */
 @media (max-width: 640px) {
   body { font-size: 17px; }
@@ -475,7 +560,7 @@ bdi.code { white-space: nowrap; }
   .icon-btn { min-width: 40px; min-height: 40px; font-size: 16px; }
   .page { padding: 10px 12px calc(80px + env(safe-area-inset-bottom)); }
   .item { gap: 0.4em; padding: 0.3em 0.2em; }
-  .item-num { min-width: 1.6em; }
+  .item-num { min-width: 2.4em; }
   .table { font-size: 0.8em; }
   .table th, .table td { padding: 4px; }
   .list.columns-2 { column-count: 1; }
