@@ -18,6 +18,7 @@ www/                  ← the app itself (everything that goes into the APK)
     book.js           book details + the colour tabs
     white.js          white tab pages (the instructions for writing content are at the top)
 .github/workflows/android.yml   builds the APK on GitHub on every push
+icon/                           app icon: icon.png (1024×1024) + make-icons.py, which makes every size
 signing/debug.keystore          fixed signing key, so updates install over the old app
 capacitor.config.json           app id and name for Android
 ```
@@ -49,6 +50,12 @@ New versions install over the old one, because every build is signed with the sa
 
 The app keeps the screen on while it is open (Android: the KeepAwake plugin; iPhone/browser: the Wake Lock API).
 The build copies Capacitor's JavaScript into `www/js/capacitor.js`; that file is not kept in the repo.
+
+## Changing the app icon
+
+Replace `icon/icon.png` with a new 1024×1024 picture, then run `python3 icon/make-icons.py`
+(needs `pip install pillow numpy`). It rewrites `www/icons/` (iPhone/browser) and `icon/android-res/`
+(Android, copied into the APK by the build). Raise `VERSION` in `sw.js` afterwards.
 
 ## iPhone / iPad (and any browser)
 
