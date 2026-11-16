@@ -33,10 +33,12 @@
   <main id="page" class="page" tabindex="-1"></main>
 
   <!-- Floating page buttons (no bar). As in a Hebrew book:
-       "חזור" on the right returns to the page you were on before,
+       "חזור" on the right returns to the page you were on before (a return
+       arrow, not a page-turn chevron: after a jump it goes back to where you
+       came from, which isn't always the previous page),
        "המשך" on the left goes to the next page. -->
   <button id="backBtn" class="fab fab-back" aria-label="חזור">
-    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 4l5 5-5 5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/></svg>
   </button>
   <button id="nextBtn" class="fab fab-next" aria-label="המשך">
     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>

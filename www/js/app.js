@@ -32,8 +32,16 @@
     sheetClose: $('sheetClose')
   };
 
-  // Ticked items, per page. Kept in memory only: closing the app clears them.
-  var ticks = {};
+  // Ticked items, per page. Saved on the device, so they survive the app
+  // being reloaded (Android and iPhone close apps in the background, e.g.
+  // while the crew switches to another app mid-procedure).
+  // Saved ticks are dropped when they are older than TICKS_MAX_AGE (counted
+  // from the last tick), and when the content has changed since, so a tick
+  // can never land on a different step.
+  var TICKS_KEY = 'ticks';
+  var TICKS_MAX_AGE = 2 * 60 * 60 * 1000; // 2 hours
+  var CONTENT_STAMP = contentStamp();
+  var ticks = loadTicks();
   var current = null; // the page being shown, or null on the home screen
 
   /* ---------------- Small helpers ---------------- */
@@ -44,6 +52,29 @@
 
   function storageSet(key, value) {
     try { localStorage.setItem(key, value); } catch (e) { /* not available */ }
+  }
+
+  // A short fingerprint of all the pages' content
+  function contentStamp() {
+    var text = JSON.stringify(BOOK.pages), hash = 0;
+    for (var i = 0; i < text.length; i++) hash = (hash * 31 + text.charCodeAt(i)) | 0;
+    return hash;
+  }
+
+  function loadTicks() {
+    var saved;
+    try {
+      saved = JSON.parse(storageGet(TICKS_KEY));
+    } catch (e) {
+      return {}; // damaged saved data: start with nothing ticked
+    }
+    var fresh = saved && saved.content === CONTENT_STAMP &&
+      Date.now() - saved.time < TICKS_MAX_AGE;
+    return (fresh && saved.ticks) || {};
+  }
+
+  function saveTicks() {
+    storageSet(TICKS_KEY, JSON.stringify({ time: Date.now(), content: CONTENT_STAMP, ticks: ticks }));
   }
 
   function escapeHtml(s) {
@@ -436,6 +467,7 @@
       var key = item.dataset.key;
       pageTicks[key] = !pageTicks[key];
       item.classList.toggle('done', pageTicks[key]);
+      saveTicks();
       updateResetButton();
     }
   });
@@ -483,6 +515,7 @@
       timer: setTimeout(hideUndo, UNDO_MS)
     };
     delete ticks[current.id];
+    saveTicks();
     applyTicks();
     els.undo.hidden = false;
   });
@@ -490,6 +523,7 @@
   els.undo.addEventListener('click', function () {
     if (!undoState || undoState.page !== current) { hideUndo(); return; }
     ticks[current.id] = undoState.ticks;
+    saveTicks();
     hideUndo();
     applyTicks();
   });
