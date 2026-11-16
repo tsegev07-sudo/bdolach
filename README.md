@@ -48,7 +48,11 @@ Alternatively, `npm start` serves it at http://localhost:8080.
 
 New versions install over the old one, because every build is signed with the same key.
 
-The app keeps the screen on while it is open (Android: the KeepAwake plugin; iPhone/browser: the Wake Lock API).
+The app keeps the screen on while it is open, however long it goes without a tap:
+- Android: set natively when the app starts (`native/android/MainActivity.java`, copied in by the APK build).
+- iPhone / iPad: the Wake Lock API, plus a tiny silent video (`www/js/awake-video.js`) playing out of sight,
+  because before iOS 18.4 the Wake Lock does nothing in an app added to the home screen.
+- Other browsers: the Wake Lock API.
 The build copies Capacitor's JavaScript into `www/js/capacitor.js`; that file is not kept in the repo.
 
 ## Changing the app icon

@@ -5,7 +5,7 @@
  *
  * When you change any file, raise VERSION so devices download the new files.
  */
-var VERSION = 'v15';
+var VERSION = 'v16';
 var CACHE = 'bdolach-' + VERSION;
 
 var FILES = [
@@ -14,6 +14,7 @@ var FILES = [
   'manifest.webmanifest',
   'css/app.css',
   'js/app.js',
+  'js/awake-video.js',
   'content/book.js',
   'content/white.js',
   'icons/apple-touch-icon.png',

@@ -568,24 +568,64 @@
 
   /* ---------------- Keep the screen on ---------------- */
 
-  // The screen never turns off while the app is open.
-  // Android app: the KeepAwake plugin (below). iPhone / browser: the Wake Lock
-  // API, which the browser drops whenever the app is hidden, so it is asked
-  // for again each time the app comes back to the screen.
-  var wakeLock = null;
+  // The screen never turns off while the app is open, however long it goes
+  // without a tap:
+  // - Android app: set natively when the app starts
+  //   (native/android/MainActivity.java); the KeepAwake plugin below asks too.
+  // - Browsers: the Wake Lock API. The browser drops it whenever the app is
+  //   hidden, so it is asked for again each time the app comes back.
+  // - iPhone / iPad: also a tiny silent video (js/awake-video.js) playing in a
+  //   loop, out of sight. Before iOS 18.4 the Wake Lock does nothing in an app
+  //   added to the home screen, but iOS never sleeps while a video plays.
+  var IS_IOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+    // iPads report themselves as a Mac; a Mac has no touch screen
+    (/Macintosh/.test(navigator.userAgent) && navigator.maxTouchPoints > 1);
 
-  function keepScreenOn() {
-    if (!('wakeLock' in navigator) || wakeLock || document.visibilityState !== 'visible') return;
+  var wakeLock = null; // the lock, or 'asking' while a request is on its way
+  var awakeVideo = null;
+
+  function requestWakeLock() {
+    if (!('wakeLock' in navigator) || wakeLock) return;
+    wakeLock = 'asking';
     navigator.wakeLock.request('screen').then(function (lock) {
       wakeLock = lock;
       lock.addEventListener('release', function () { wakeLock = null; });
-    }).catch(function () { /* not allowed right now; tried again on the next tap */ });
+    }).catch(function () {
+      wakeLock = null; // not allowed right now: asked again on the next tap
+    });
+  }
+
+  function playAwakeVideo() {
+    if (!awakeVideo) {
+      awakeVideo = document.createElement('video');
+      awakeVideo.className = 'awake-video';
+      awakeVideo.muted = true;
+      awakeVideo.loop = true;
+      awakeVideo.playsInline = true;
+      // iOS also needs these as attributes to play inline without sound
+      awakeVideo.setAttribute('muted', '');
+      awakeVideo.setAttribute('playsinline', '');
+      awakeVideo.setAttribute('aria-hidden', 'true');
+      awakeVideo.src = AWAKE_VIDEO;
+      document.body.appendChild(awakeVideo);
+    }
+    if (awakeVideo.paused) {
+      awakeVideo.play().catch(function () {
+        // not allowed yet (e.g. Low Power Mode): tried again on the next tap
+      });
+    }
+  }
+
+  function keepScreenOn() {
+    if (document.visibilityState !== 'visible') return;
+    if (IS_IOS) playAwakeVideo();
+    requestWakeLock();
   }
 
   if (!window.Capacitor) {
     keepScreenOn();
     document.addEventListener('visibilitychange', keepScreenOn);
-    // Some browsers only allow it after the first tap
+    // Some browsers only allow these after a tap
     document.addEventListener('click', keepScreenOn);
   }
 

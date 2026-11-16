@@ -457,6 +457,18 @@ bdi.code { white-space: nowrap; }
   100% { background: transparent; }
 }
 
+/* The silent video that keeps an iPhone / iPad screen on (js/app.js):
+   on the page, so iOS plays it, but invisible and never in the way */
+.awake-video {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
 /* ---------- Table of contents (inside the pop-up) ---------- */
 .toc-entry {
   display: flex;

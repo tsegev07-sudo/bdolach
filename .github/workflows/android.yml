@@ -34,6 +34,16 @@ jobs:
       - name: Create the Android project from www/
         run: npx cap add android && npx cap sync android
 
+      # Our MainActivity keeps the screen on (see native/android/MainActivity.java).
+      # Fails the build if Capacitor's generated one isn't found, rather than
+      # quietly building an APK whose screen turns off.
+      - name: Keep the screen on
+        run: |
+          target=$(find android/app/src/main/java -name MainActivity.java)
+          test "$(echo "$target" | grep -c .)" -eq 1
+          cp native/android/MainActivity.java "$target"
+          grep -q FLAG_KEEP_SCREEN_ON "$target"
+
       # Replace Capacitor's default launcher icon with ours (made by icon/make-icons.py)
       - name: Use the app icon
         run: cp -r icon/android-res/. android/app/src/main/res/
