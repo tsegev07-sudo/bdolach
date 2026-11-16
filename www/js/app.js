@@ -323,6 +323,15 @@
       return;
     }
     closeSheet();
+    // Same page as the one showing (its tab, a heading of this page in the
+    // table of contents, a note on the notes page): move within the page
+    // without a new history entry. Otherwise "חזור" would appear and only
+    // lead back to this same page.
+    if (id === currentAddress().split('/')[0]) {
+      history.replaceState(history.state, '', '#' + address);
+      show(address);
+      return;
+    }
     // Remember where this page was scrolled to, for when "חזור" returns here
     history.replaceState({ depth: depth, scroll: els.page.scrollTop }, '', location.hash);
     depth++;
