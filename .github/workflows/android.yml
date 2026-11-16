@@ -34,6 +34,10 @@ jobs:
       - name: Create the Android project from www/
         run: npx cap add android && npx cap sync android
 
+      # Replace Capacitor's default launcher icon with ours (made by icon/make-icons.py)
+      - name: Use the app icon
+        run: cp -r icon/android-res/. android/app/src/main/res/
+
       # Same signing key on every build, so a new APK installs over the old one
       - name: Use the project's signing key
         run: mkdir -p ~/.android && cp signing/debug.keystore ~/.android/debug.keystore
