@@ -65,10 +65,14 @@ Replace `icon/icon.png` with a new 1024×1024 picture, then run `python3 icon/ma
 
 The same `www/` folder also works as an installable web app (PWA), and it works offline.
 
-1. Host the `www/` folder on any HTTPS address, for example Netlify connected to this repo,
-   with publish directory `www` and no build command.
-2. On the iPhone, open the address in Safari → Share → **Add to Home Screen**.
-3. Open it once while online. After that it runs full screen, with no internet.
+It is published on GitHub Pages at **https://tsegev07-sudo.github.io/bdolach/**.
+The **Publish website** workflow (`.github/workflows/pages.yml`) updates the site on every push to `main`.
+(One-time setup, if the workflow can't turn Pages on by itself: Settings → Pages → Source: **GitHub Actions**.)
+
+1. On the iPhone, open the address in Safari → Share → **Add to Home Screen**.
+2. Open it once while online. After that it runs full screen, with no internet.
+
+The site used to be on Netlify; `netlify.toml` is kept in case it moves back, and is not used by GitHub Pages.
 
 `www/sw.js` saves the files on the device. **Whenever you change any file in `www/`, raise `VERSION` in `sw.js`**
 (v1 → v2 …) so phones download the new version. They pick it up the next time the app is opened online.

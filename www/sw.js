@@ -5,7 +5,7 @@
  *
  * When you change any file, raise VERSION so devices download the new files.
  */
-var VERSION = 'v16';
+var VERSION = 'v17';
 var CACHE = 'bdolach-' + VERSION;
 
 var FILES = [
@@ -24,7 +24,11 @@ var FILES = [
 ];
 
 self.addEventListener('install', function (e) {
-  e.waitUntil(caches.open(CACHE).then(function (c) { return c.addAll(FILES); }));
+  // cache: 'reload' downloads each file fresh. Websites tell browsers to keep
+  // files for a while (GitHub Pages: 10 minutes), and without this a new
+  // version could be saved with a file left over from the old one.
+  var fresh = FILES.map(function (f) { return new Request(f, { cache: 'reload' }); });
+  e.waitUntil(caches.open(CACHE).then(function (c) { return c.addAll(fresh); }));
   self.skipWaiting();
 });
 
