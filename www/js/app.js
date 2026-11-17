@@ -368,9 +368,21 @@
 
   // How many pages back "חזור" can go (0 = this is the first page opened)
   var depth = 0;
+  // The pages "חזור" steps back through, oldest first, ending with the page
+  // showing. Saved in every history entry. null for entries saved by an older
+  // version of the app, which didn't keep it.
+  var trail = null;
+  // Where to go once history.go() lands on an earlier page (e.g. one of its headings)
+  var pendingAddress = null;
 
   function currentAddress() {
     return decodeURIComponent(location.hash.slice(1));
+  }
+
+  // Reads depth and trail back from a history entry
+  function restoreHistoryState(state) {
+    depth = (state && state.depth) || 0;
+    trail = (state && state.trail) || null;
   }
 
   // Opens a page and adds it to the history
@@ -390,10 +402,22 @@
       show(address);
       return;
     }
+    // A page already on the way here (the previous page, swiping or the table
+    // of contents back to an earlier one): step back through the history to
+    // it instead of adding it again. Otherwise "חזור" would show on the first
+    // page and lead forward to the page just left.
+    var earlier = trail ? trail.lastIndexOf(id) : -1;
+    if (earlier >= 0) {
+      // A heading or note is shown where asked; a plain page returns to its spot
+      pendingAddress = address.indexOf('/') >= 0 ? address : null;
+      history.go(earlier - (trail.length - 1));
+      return;
+    }
     // Remember where this page was scrolled to, for when "חזור" returns here
-    history.replaceState({ depth: depth, scroll: els.page.scrollTop }, '', location.hash);
+    history.replaceState({ depth: depth, trail: trail, scroll: els.page.scrollTop }, '', location.hash);
     depth++;
-    history.pushState({ depth: depth }, '', '#' + address);
+    trail = trail && trail.concat(id);
+    history.pushState({ depth: depth, trail: trail }, '', '#' + address);
     show(address);
   }
 
@@ -412,7 +436,14 @@
   // "חזור" and the Android back button land here, as does editing the address
   window.addEventListener('popstate', function (e) {
     closeSheet();
-    depth = (e.state && e.state.depth) || 0;
+    restoreHistoryState(e.state);
+    if (pendingAddress) {
+      var asked = pendingAddress;
+      pendingAddress = null;
+      history.replaceState(history.state, '', '#' + asked);
+      show(asked);
+      return;
+    }
     // Returning to a page: back to the same spot, without highlighting the note again
     var address = currentAddress();
     if (e.state && e.state.scroll != null) address = address.split('/')[0];
@@ -424,13 +455,23 @@
   }
 
   function start() {
-    depth = (history.state && history.state.depth) || 0;
-    if (show(currentAddress(), history.state && history.state.scroll)) return;
+    restoreHistoryState(history.state);
+    var address = currentAddress();
+    if (findPage(address.split('/')[0])) {
+      // Opened at this page (a link, or a history entry saved without a trail)
+      if (!trail && depth === 0) {
+        trail = [address.split('/')[0]];
+        history.replaceState({ depth: 0, trail: trail, scroll: history.state && history.state.scroll }, '', location.hash);
+      }
+      show(address, history.state && history.state.scroll);
+      return;
+    }
 
     // No page in the address (first launch): open straight into the start tab
     var first = tabPages(BOOK.startTab)[0] || BOOK.pages[0];
     depth = 0;
-    history.replaceState({ depth: 0 }, '', '#' + first.id);
+    trail = [first.id];
+    history.replaceState({ depth: 0, trail: trail }, '', '#' + first.id);
     renderPage(first);
   }
 
