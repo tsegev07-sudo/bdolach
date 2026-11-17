@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Building the tablet app in Android Studio</title>
+<!-- Printed into dist/closed-network/1-steps.pdf by tools/make-pdf-export.py -->
+<style>
+  @page { size: A4; margin: 16mm 16mm 14mm; }
+  body { font: 10.5pt/1.45 Helvetica, Arial, sans-serif; color: #111; margin: 0; }
+  h1 { font-size: 19pt; margin: 0 0 2pt; }
+  .sub { color: #555; margin: 0 0 14pt; }
+  h2 { font-size: 13pt; margin: 16pt 0 5pt; padding-bottom: 3pt; border-bottom: 1.5pt solid #0b5cad; break-after: avoid; }
+  ol { margin: 4pt 0; padding-left: 18pt; }
+  li { margin: 3pt 0; }
+  code, .path { font-family: "DejaVu Sans Mono", Consolas, monospace; font-size: 9pt; background: #eef2f6; padding: 0 3pt; border-radius: 2pt; }
+  b { font-weight: 700; }
+  table { width: 100%; border-collapse: collapse; margin: 6pt 0; font-size: 9.5pt; }
+  th, td { text-align: left; vertical-align: top; padding: 4pt 6pt; border-bottom: 0.75pt solid #ccd3da; }
+  th { background: #1f2933; color: #fff; font-weight: 600; }
+  th .path { background: rgba(255, 255, 255, 0.18); color: #fff; }
+  td:first-child { white-space: nowrap; }
+  .note { background: #fff6e0; border-left: 3pt solid #e58200; padding: 5pt 8pt; margin: 8pt 0; break-inside: avoid; }
+  .ok { background: #e8f4ea; border-left: 3pt solid #2e7d32; padding: 5pt 8pt; margin: 8pt 0; break-inside: avoid; }
+  .he { direction: rtl; unicode-bidi: isolate; }
+</style>
+</head>
+<body>
+
+<h1>Building the tablet app in Android Studio</h1>
+<p class="sub">The app <b class="he">בד"ח סופה</b>, built on this computer and installed on the tablets by USB.
+You need Android Studio (from the software catalog) and these PDFs.</p>
+
+<table>
+  <tr><th>PDF</th><th>What it is</th></tr>
+  <tr><td>1-steps.pdf</td><td>These steps</td></tr>
+  <tr><td>2-index.html.pdf</td><td>The app itself: all its pages, look and behaviour</td></tr>
+  <tr><td>3-MainActivity.java.pdf</td><td>The app's screen: shows the pages full screen, keeps the screen on, back button</td></tr>
+  <tr><td>4-AndroidManifest.xml.pdf</td><td>The app's settings</td></tr>
+  <tr><td>5-strings.xml.pdf</td><td>The app's name under its icon</td></tr>
+  <tr><td>6- and 7-ic_launcher_...xml.pdf</td><td>The app's icon (sphere and paper plane)</td></tr>
+</table>
+
+<h2>1. Make the project (first time only)</h2>
+<ol>
+  <li>Install <b>Android Studio IDE</b> from the software catalog (and <b>Android Studio tools</b> if it is offered separately).</li>
+  <li>Open Android Studio &rarr; <b>New Project</b> &rarr; <b>Phone and Tablet</b> &rarr; <b>Empty Views Activity</b> &rarr; <b>Next</b>.</li>
+  <li>Fill in exactly:
+    <b>Name</b>: <code>Bdolach</code> &nbsp;
+    <b>Package name</b>: <code>com.bdolach.sufa</code> &nbsp;
+    <b>Language</b>: <code>Java</code> &nbsp;
+    leave the rest as it is &rarr; <b>Finish</b>.</li>
+  <li>Wait until the bar at the bottom stops working (the first time can take several minutes).</li>
+  <li>Check that Android Studio can build on this computer: menu <b>Build</b> &rarr; <b>Generate App Bundles or APKs</b> &rarr; <b>Generate APKs</b>
+    (in older versions: <b>Build</b> &rarr; <b>Build Bundle(s) / APK(s)</b> &rarr; <b>Build APK(s)</b>).</li>
+</ol>
+<div class="note">If this fails with a message about downloading (Gradle, a plugin, "could not resolve"), Android Studio can't get
+its parts on this network. Ask the software catalog's support how Android Studio is set up to build here
+(other teams' Android apps are in the catalog, so it is possible). The steps below don't need anything more than this.</div>
+
+<h2>2. Put in the app's files</h2>
+<p>In the panel on the left, switch the view from <b>Android</b> to <b>Project</b> (the drop-down at its top), so the folders match the paths below.
+Then for each PDF:</p>
+<ol>
+  <li>Open the PDF &rarr; <b>Ctrl+A</b> &rarr; <b>Ctrl+C</b>.</li>
+  <li>In Android Studio, open the file from the table (double-click it) &rarr; <b>Ctrl+A</b> &rarr; <b>Ctrl+V</b>. This replaces everything in it.</li>
+  <li>Delete the two lines at the top that came from the PDF (its title and the "Select all" line). The file must start with the code.</li>
+</ol>
+<table>
+  <tr><th>PDF</th><th>File in Android Studio (all under <span class="path">Bdolach/app/src/main/</span>)</th></tr>
+  <tr><td>3-MainActivity.java</td><td><span class="path">java/com/bdolach/sufa/MainActivity.java</span></td></tr>
+  <tr><td>4-AndroidManifest.xml</td><td><span class="path">AndroidManifest.xml</span></td></tr>
+  <tr><td>5-strings.xml</td><td><span class="path">res/values/strings.xml</span></td></tr>
+  <tr><td>6-ic_launcher_background.xml</td><td><span class="path">res/drawable/ic_launcher_background.xml</span></td></tr>
+  <tr><td>7-ic_launcher_foreground.xml</td><td><span class="path">res/drawable/ic_launcher_foreground.xml</span> &nbsp;(in some versions it is in
+    <span class="path">res/drawable-v24/</span> instead; if it is in both, paste into both)</td></tr>
+  <tr><td>2-index.html</td><td>A new file. Right-click <span class="path">main</span> &rarr; <b>New</b> &rarr; <b>Folder</b> &rarr; <b>Assets Folder</b> &rarr; <b>Finish</b>.
+    Then right-click the new <span class="path">assets</span> folder &rarr; <b>New</b> &rarr; <b>File</b> &rarr; name it <code>index.html</code> &rarr; paste into it.</td></tr>
+</table>
+<div class="note">If you chose another package name in step 1, change the line <code>package com.bdolach.sufa;</code> near the top of MainActivity.java to match it.</div>
+
+<h2>3. Build the app</h2>
+<ol>
+  <li><b>Build</b> &rarr; <b>Generate APKs</b> (as in step 1.5).</li>
+  <li>When it says the APK is ready, click <b>locate</b>. The app is <span class="path">app-debug.apk</span> in
+    <span class="path">Bdolach\app\build\outputs\apk\debug\</span>. You can rename it to <code>bdolach.apk</code>.</li>
+</ol>
+
+<h2>4. Install it on a tablet</h2>
+<ol>
+  <li>Connect the tablet to the computer with a USB cable. On the tablet, choose <b>File transfer</b> when it asks what the USB connection is for.</li>
+  <li>On the computer, copy the APK into the tablet's <b>Download</b> folder.</li>
+  <li>On the tablet, open <b>Files</b> (or <b>My Files</b>) &rarr; <b>Download</b> &rarr; tap the APK &rarr; <b>Install</b>.
+    The first time, Android asks to allow installing apps from Files: allow it.</li>
+  <li>The app <b class="he">בד"ח סופה</b> appears with the other apps. It runs with no network.</li>
+</ol>
+<div class="ok"><b>Updates</b>: when the content changes, only a new <b>2-index.html.pdf</b> comes in. Paste it into
+<span class="path">assets/index.html</span> (step 2), build (step 3) and install over the old app (step 4). Ticks and settings stay.</div>
+<div class="note">The app is signed with a key that Android Studio keeps for this Windows user. Build updates as the same user on the
+same computer; an app built elsewhere won't install over it until the old one is uninstalled from the tablet.</div>
+
+</body>
+</html>

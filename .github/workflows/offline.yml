@@ -17,8 +17,9 @@ jobs:
       - name: Build dist/bdolach-offline.html
         run: python3 tools/make-offline.py
 
-      # The same app as a PDF of plain-ASCII code, to copy out on the other side
-      - name: Build dist/bdolach.html.pdf
+      # Everything for building the tablet app on a closed network, as PDFs
+      # (see android-studio/steps.html)
+      - name: Build dist/closed-network/
         run: python3 tools/make-pdf-export.py
 
       - uses: actions/upload-artifact@v4
@@ -26,5 +27,5 @@ jobs:
           name: bdolach-offline
           path: |
             dist/bdolach-offline.html
-            dist/bdolach.html.pdf
+            dist/closed-network/*.pdf
           retention-days: 30

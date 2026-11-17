@@ -1,0 +1,4 @@
+<!-- The app's name under its icon. The &#x...; codes are the Hebrew letters -->
+<resources>
+    <string name="app_name">&#x5d1;&#x5d3;\"&#x5d7; &#x5e1;&#x5d5;&#x5e4;&#x5d4;</string>
+</resources>

@@ -741,6 +741,17 @@
 
   /* ---------------- Android app ---------------- */
 
+  // Back button: close an open pop-up first, otherwise go back a page
+  // (same as "חזור"). Returns false when there is nothing to go back to, and
+  // the app then closes. Also called by the plain Android app built in
+  // Android Studio (android-studio/MainActivity.java).
+  window.bdolachBack = function () {
+    if (!els.sheet.hidden) closeSheet();
+    else if (depth > 0) history.back();
+    else return false;
+    return true;
+  };
+
   // Inside the Android app, Capacitor's JavaScript (js/capacitor.js, copied in
   // when the APK is built) gives access to the native plugins.
   function initAndroid() {
@@ -749,13 +760,9 @@
 
     cap.registerPlugin('KeepAwake').keepAwake();
 
-    // Back button: close an open pop-up first, otherwise go back a page
-    // (same as "חזור"), otherwise leave the app.
     var app = cap.registerPlugin('App');
     app.addListener('backButton', function () {
-      if (!els.sheet.hidden) closeSheet();
-      else if (depth > 0) history.back();
-      else app.exitApp();
+      if (!window.bdolachBack()) app.exitApp();
     });
   }
 

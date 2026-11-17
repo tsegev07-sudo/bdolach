@@ -1,26 +1,31 @@
 #!/usr/bin/env python3
 """
-Exports the whole app as a PDF of plain-ASCII code, for a closed network
-that takes in PDFs but not program files. On the other side:
-open the PDF -> Select all -> Copy -> paste into a new text file named
-bdolach.html -> delete the two lines above the code -> double-click it.
+Exports everything needed to build the tablet app on a closed network that
+takes in PDFs but not program files, as PDFs of plain-ASCII text. On the
+other side each PDF is opened -> Select all -> Copy -> pasted into the file
+it names (the steps are in the first PDF, made from android-studio/steps.html).
 
-    python3 tools/make-pdf-export.py
-        -> dist/bdolach.html       the app in one file, ASCII only
-        -> dist/bdolach.html.pdf   that file printed, ready to transfer
+    python3 tools/make-pdf-export.py   ->  dist/closed-network/
+        1-steps.pdf                      how to build and install the app
+        2-index.html.pdf                 the app itself, in one file
+        3-MainActivity.java.pdf  ...     the Android Studio files (android-studio/)
+        index.html                       the same app file, also usable as is
 
-Copying text out of a PDF can scramble Hebrew (right-to-left) and breaks any
-line that the page wrapped. So the exported code:
+Copying text out of a PDF can scramble Hebrew (right-to-left), breaks any
+line that the page wrapped, reorders text around wide gaps, and joins a line
+ending in "-" to the next. So every exported file:
   - has no Hebrew or other non-ASCII characters. They are written as escapes
-    that the browser turns back into Hebrew: \\u05d0 in JavaScript, \\0005d0 in
-    CSS, &#x5d0; in HTML. The app shows exactly the same text.
-  - has no line longer than LIMIT characters. Long strings are split into
-    ('...' + '...'), and long comments are wrapped, so the PDF never wraps a line.
-  - has /* */ comments only. A // comment would swallow the code after it if
-    a line break were lost in the copy.
+    that turn back into Hebrew: \\u05d0 in JavaScript, \\0005d0 in CSS,
+    &#x5d0; in HTML and XML. The app shows exactly the same text.
+  - has no line longer than LIMIT characters. In the app, long strings are
+    split into ('...' + '...') and long comments are wrapped.
+  - has /* */ comments only in JavaScript. A // comment would swallow the code
+    after it if a line break were lost in the copy.
+  - has no runs of spaces inside a line, and no line ending in "-".
+The script stops with an error naming the line if any of this isn't met.
 
-Needs Python 3 and Chrome (or Chromium) to print the PDF. If Chrome isn't
-found, open dist/bdolach.html.print.html in Chrome and print it to PDF with
+Needs Python 3 and Chrome (or Chromium) to print the PDFs. If Chrome isn't
+found, print the files in dist/closed-network/print/ from Chrome, with
 "Headers and footers" turned off.
 """
 import html as htmllib
@@ -33,8 +38,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 WWW = ROOT / 'www'
-DIST = ROOT / 'dist'
-NAME = 'bdolach.html'
+STUDIO = ROOT / 'android-studio'
+OUT = ROOT / 'dist' / 'closed-network'
 LIMIT = 140  # longest line, in characters (the PDF page fits about 165)
 
 
@@ -270,6 +275,25 @@ def wrap_html_line(line):
     return '\n'.join(out)
 
 
+def check(name, text):
+    """Stops with an error if text isn't safe to copy out of a PDF."""
+    for n, line in enumerate(text.split('\n'), 1):
+        where = '%s line %d: %r' % (name, n, line[:80])
+        if any(ord(c) > 127 or (ord(c) < 32 and c != '\t') for c in line):
+            sys.exit('non-ASCII character in ' + where)
+        if '\t' in line:
+            sys.exit('tab in ' + where)
+        if len(line) > LIMIT:
+            sys.exit('longer than %d characters: %s' % (LIMIT, where))
+        # PDF copy joins a line ending in "-" to the next one (it takes it
+        # for a hyphenated word)
+        if line.endswith('-'):
+            sys.exit('ends in "-" (PDF copy would join it to the next line): ' + where)
+        # a gap of spaces inside a line reads as a table column and gets reordered
+        if re.search(r'\S  +\S', line):
+            sys.exit('several spaces in a row (PDF copy may reorder the text): ' + where)
+
+
 def build():
     page = read('index.html')
 
@@ -308,21 +332,12 @@ def build():
     # only lost in the copy, harmlessly); other runs of spaces become one.
     page = '\n'.join(re.sub(r'(?<=\S) {2,}', ' ', l).rstrip(' ') for l in page.split('\n'))
 
-    bad = [c for c in page if ord(c) > 127 or (ord(c) < 32 and c != '\n')]
-    if bad:
-        sys.exit('non-ASCII left in the export: %r' % sorted(set(bad))[:10])
-    # PDF copy joins a line ending in "-" to the next one (it takes it for a
-    # hyphenated word), so no line may end that way.
-    hyphen = [l for l in page.split('\n') if l.endswith('-')]
-    if hyphen:
-        sys.exit('lines ending in "-" (PDF copy would join them): %r' % hyphen[:3])
-    long_lines = [l for l in page.split('\n') if len(l) > LIMIT]
-    if long_lines:
-        sys.exit('%d lines longer than %d, e.g. %r' % (len(long_lines), LIMIT, long_lines[0][:80]))
+    check('index.html', page)
     return page
 
 
-def print_page(code):
+def print_page(name, code):
+    """A page that prints code like the PDFs used before: title, how to copy, the code."""
     lines = code.count('\n') + 1
     return '''<!doctype html>
 <html><head><meta charset="utf-8"><title>%(name)s</title>
@@ -336,10 +351,10 @@ def print_page(code):
 </style></head>
 <body>
 <h1>%(name)s</h1>
-<p>Select all &rarr; copy &rarr; paste into a new file named <b>%(name)s</b>. Delete the two lines above the code. %(lines)d lines, %(chars)d characters.</p>
+<p>Select all &rarr; copy &rarr; paste into the file <b>%(name)s</b>, replacing everything in it. Delete the two lines above the code. %(lines)d lines, %(chars)d characters.</p>
 <pre>%(code)s</pre>
 </body></html>
-''' % {'name': NAME, 'lines': lines, 'chars': len(code), 'code': htmllib.escape(code, quote=False)}
+''' % {'name': name, 'lines': lines, 'chars': len(code), 'code': htmllib.escape(code, quote=False)}
 
 
 def find_chrome():
@@ -351,26 +366,45 @@ def find_chrome():
     return None
 
 
+# The PDFs, in the order they are used (see android-studio/steps.html)
+STUDIO_FILES = ['MainActivity.java', 'AndroidManifest.xml', 'strings.xml',
+                'ic_launcher_background.xml', 'ic_launcher_foreground.xml']
+
+
+def to_pdf(chrome, page, pdf):
+    subprocess.run([chrome, '--headless', '--no-sandbox', '--disable-gpu',
+                    '--no-pdf-header-footer', '--print-to-pdf=' + str(pdf),
+                    page.as_uri()], check=True,
+                   stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    print('  %s (%d KB)' % (pdf.name, pdf.stat().st_size // 1024))
+
+
 def main():
-    code = build()
-    DIST.mkdir(exist_ok=True)
-    out = DIST / NAME
-    out.write_text(code, encoding='ascii')
-    printable = DIST / (NAME + '.print.html')
-    printable.write_text(print_page(code), encoding='ascii')
-    print('%s (%d lines)' % (out.relative_to(ROOT), code.count('\n') + 1))
+    files = [('index.html', build())]
+    for name in STUDIO_FILES:
+        text = (STUDIO / name).read_text(encoding='utf-8').rstrip('\n')
+        check(name, text)
+        files.append((name, text))
+
+    if OUT.exists():
+        shutil.rmtree(OUT)
+    (OUT / 'print').mkdir(parents=True)
+    (OUT / 'index.html').write_text(files[0][1], encoding='ascii')
+
+    pages = [('1-steps.pdf', STUDIO / 'steps.html')]
+    for n, (name, text) in enumerate(files, 2):
+        page = OUT / 'print' / (name + '.html')
+        page.write_text(print_page(name, text), encoding='ascii')
+        pages.append(('%d-%s.pdf' % (n, name), page))
 
     chrome = find_chrome()
     if not chrome:
-        print('Chrome not found: open %s in Chrome and print it to PDF '
-              '(Headers and footers: off).' % printable.relative_to(ROOT))
+        print('Chrome not found: print android-studio/steps.html and the files in %s '
+              'from Chrome (Headers and footers: off).' % (OUT / 'print').relative_to(ROOT))
         return
-    pdf = DIST / (NAME + '.pdf')
-    subprocess.run([chrome, '--headless', '--no-sandbox', '--disable-gpu',
-                    '--no-pdf-header-footer', '--print-to-pdf=' + str(pdf),
-                    printable.as_uri()], check=True,
-                   stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    print('%s (%d KB)' % (pdf.relative_to(ROOT), pdf.stat().st_size // 1024))
+    print(str(OUT.relative_to(ROOT)) + '/')
+    for pdf, page in pages:
+        to_pdf(chrome, page, OUT / pdf)
 
 
 if __name__ == '__main__':

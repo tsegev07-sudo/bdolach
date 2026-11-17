@@ -1,0 +1,132 @@
+# Tests the closed-network route end to end, the way it is done there:
+# builds the PDFs (tools/make-pdf-export.py), copies the text back out of
+# each PDF into a fresh Android project, builds the app, and runs it on an
+# Android emulator. The APK and screenshots are kept as the run's artifact
+# "bdolach-android-studio".
+name: Test Android Studio route
+
+on:
+  push:
+    branches: [main, 'claude/**']
+  workflow_dispatch:
+
+jobs:
+  build-and-run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install the PDF text extractor
+        run: sudo apt-get update -q && sudo apt-get install -y -q poppler-utils
+
+      - name: Make the PDFs
+        run: python3 tools/make-pdf-export.py
+
+      # Each PDF's text, minus its first two lines (title and "Select all"),
+      # goes where steps.html says to paste it
+      - name: Copy the text out of the PDFs into a new project
+        run: |
+          set -e
+          pdfs=dist/closed-network
+          main=proj/app/src/main
+          mkdir -p $main/java/com/bdolach/sufa $main/res/values $main/res/drawable $main/assets $main/res/mipmap-anydpi-v26
+          copy() { pdftotext "$pdfs/$1" - | tail -n +3 | tr -d '\f' > "$2"; }
+          copy 2-index.html.pdf $main/assets/index.html
+          copy 3-MainActivity.java.pdf $main/java/com/bdolach/sufa/MainActivity.java
+          copy 4-AndroidManifest.xml.pdf $main/AndroidManifest.xml
+          copy 5-strings.xml.pdf $main/res/values/strings.xml
+          copy 6-ic_launcher_background.xml.pdf $main/res/drawable/ic_launcher_background.xml
+          copy 7-ic_launcher_foreground.xml.pdf $main/res/drawable/ic_launcher_foreground.xml
+          # The copies must hold the same characters as the originals (spacing aside)
+          same() { diff <(tr -d ' \n\t' < "$1") <(tr -d ' \n\t' < "$2") > /dev/null || { echo "Copy differs: $2"; exit 1; }; }
+          same $pdfs/index.html $main/assets/index.html
+          for f in MainActivity.java:java/com/bdolach/sufa/MainActivity.java AndroidManifest.xml:AndroidManifest.xml \
+                   strings.xml:res/values/strings.xml ic_launcher_background.xml:res/drawable/ic_launcher_background.xml \
+                   ic_launcher_foreground.xml:res/drawable/ic_launcher_foreground.xml; do
+            same android-studio/${f%%:*} $main/${f#*:}
+          done
+          echo "All copies match their originals."
+
+      # What Android Studio's "Empty Views Activity" project already has
+      - name: Add the project files Android Studio would make
+        run: |
+          cat > proj/settings.gradle <<'EOF'
+          pluginManagement { repositories { google(); mavenCentral(); gradlePluginPortal() } }
+          dependencyResolutionManagement { repositories { google(); mavenCentral() } }
+          rootProject.name = 'Bdolach'
+          include ':app'
+          EOF
+          cat > proj/build.gradle <<'EOF'
+          plugins { id 'com.android.application' version '8.7.3' apply false }
+          EOF
+          cat > proj/app/build.gradle <<'EOF'
+          plugins { id 'com.android.application' }
+          android {
+              namespace 'com.bdolach.sufa'
+              compileSdk 35
+              defaultConfig {
+                  applicationId 'com.bdolach.sufa'
+                  minSdk 26
+                  targetSdk 35
+                  versionCode 1
+                  versionName '1.0'
+              }
+              compileOptions {
+                  sourceCompatibility JavaVersion.VERSION_11
+                  targetCompatibility JavaVersion.VERSION_11
+              }
+          }
+          EOF
+          for name in ic_launcher ic_launcher_round; do
+            cat > proj/app/src/main/res/mipmap-anydpi-v26/$name.xml <<'EOF'
+          <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+              <background android:drawable="@drawable/ic_launcher_background" />
+              <foreground android:drawable="@drawable/ic_launcher_foreground" />
+          </adaptive-icon>
+          EOF
+          done
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: 8.11.1
+
+      - name: Build the app
+        run: gradle -p proj assembleDebug --no-daemon -q
+
+      - name: Check the app's name and screen
+        run: |
+          aapt2=$(ls -d $ANDROID_HOME/build-tools/*/ | sort -V | tail -1)aapt2
+          badging=$($aapt2 dump badging proj/app/build/outputs/apk/debug/app-debug.apk)
+          echo "$badging" | grep -E "^(package|application-label|launchable-activity)"
+          echo "$badging" | grep -q "application-label:'בד\"ח סופה'"
+          echo "$badging" | grep -q "launchable-activity: name='com.bdolach.sufa.MainActivity'"
+
+      - name: Enable the emulator's hardware acceleration
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Run it on an Android 15 tablet emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_tablet
+          disable-animations: true
+          script: bash android-studio/emulator-test.sh proj/app/build/outputs/apk/debug/app-debug.apk
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: bdolach-android-studio
+          path: |
+            proj/app/build/outputs/apk/debug/app-debug.apk
+            shot-*.png
+          retention-days: 30

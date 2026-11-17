@@ -19,8 +19,10 @@ www/                  ← the app itself (everything that goes into the APK)
     white.js          white tab pages (the instructions for writing content are at the top)
 .github/workflows/android.yml   builds the APK on GitHub on every push
 tools/make-offline.py           builds dist/bdolach-offline.html, the one-file version for closed networks
-tools/make-pdf-export.py        builds dist/bdolach.html.pdf, the same app as a PDF of plain-ASCII code
+tools/make-pdf-export.py        builds dist/closed-network/, PDFs for building the tablet app in Android Studio inside
+android-studio/                 the Android Studio files and steps that go into those PDFs
 .github/workflows/offline.yml   builds both on GitHub on every push
+.github/workflows/android-studio.yml   tests the PDFs: copies them back out, builds and runs the app
 icon/                           app icon: icon.png (1024×1024) + make-icons.py, which makes every size
 signing/debug.keystore          fixed signing key, so updates install over the old app
 capacitor.config.json           app id and name for Android
@@ -70,21 +72,33 @@ GitHub also builds it on every push: **Actions** → **Build offline file** → 
 
 After any change in `www/`, run the script again and transfer the new file. It replaces the old one.
 
-### As a PDF (when only PDFs can go in)
+### Tablet app built inside, from PDFs (when only PDFs can go in)
 
-`python3 tools/make-pdf-export.py` builds **`dist/bdolach.html.pdf`**: the same one-file app, printed as code
-(GitHub puts it in the same `bdolach-offline` artifact). On the closed computer:
+`python3 tools/make-pdf-export.py` builds **`dist/closed-network/`**: numbered PDFs of plain text, from which the
+tablet app is built in Android Studio on the closed computer and installed on the tablets by USB
+(GitHub puts them in the same `bdolach-offline` artifact):
 
-1. Open the PDF → **Select all** → **Copy**.
-2. Paste into a new text file (Notepad) and delete the two lines above the code.
-3. Save it as **`bdolach.html`** (in Notepad: "Save as type: All files"), then double-click it.
+- `1-steps.pdf` — the steps (from `android-studio/steps.html`)
+- `2-index.html.pdf` — the app (the same one-file app as above)
+- `3-…` to `7-…` — the Android Studio files in `android-studio/`: `MainActivity.java` (full-screen page,
+  screen kept on, back button), `AndroidManifest.xml`, `strings.xml` (the name), and the icon redrawn as
+  vector XML (`ic_launcher_background.xml`, `ic_launcher_foreground.xml`)
 
-Copying from a PDF scrambles Hebrew (right to left) and breaks lines the page wrapped, so the exported code is
-plain ASCII: Hebrew is written as `א` (JavaScript), `\0005d0` (CSS) and `&#x5d0;` (HTML), which the
-browser shows as Hebrew again. Lines are kept short (long strings are split into `('...' + '...')`), comments
-are `/* */` only, and spaces that line things up in columns are removed, because PDF copy reorders text
-around such gaps. The script refuses to build if any of this can't be met (it says which line).
-It has no tab icon (the picture data would add pages to copy).
+The Android part is plain Android with no libraries (unlike the Capacitor APK above), so it builds with nothing
+but Android Studio and its SDK. For content changes only `2-index.html.pdf` needs to go in again.
+
+Copying from a PDF scrambles Hebrew (right to left), breaks lines the page wrapped, reorders text around wide gaps
+and joins a line ending in `-` to the next. So every exported file is plain ASCII: Hebrew is written as `\u05d0`
+(JavaScript), `\0005d0` (CSS) and `&#x5d0;` (HTML and XML), which turn back into Hebrew. Lines are kept short
+(long strings are split into `('...' + '...')`), JavaScript comments are `/* */` only, and there are no runs of
+spaces inside lines and no lines ending in `-`. The script refuses to build if any of this isn't met, and says which
+line. Edit the files in `android-studio/` with that in mind. The app file has no tab icon (the picture data would
+add pages to copy).
+
+The **Test Android Studio route** workflow (`.github/workflows/android-studio.yml`) checks all of it on every push:
+it makes the PDFs, copies the text back out of them into a new Android project, builds the app, and runs it on an
+Android 15 tablet emulator (`android-studio/emulator-test.sh`: the page shows, screen kept on, back button, turning).
+Its artifact `bdolach-android-studio` has that APK and screenshots.
 
 ## Changing the app icon
 
