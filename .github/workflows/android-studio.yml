@@ -103,7 +103,8 @@ jobs:
           aapt2=$(ls -d $ANDROID_HOME/build-tools/*/ | sort -V | tail -1)aapt2
           badging=$($aapt2 dump badging proj/app/build/outputs/apk/debug/app-debug.apk)
           echo "$badging" | grep -E "^(package|application-label|launchable-activity)"
-          echo "$badging" | grep -q "application-label:'בד\"ח סופה'"
+          # aapt2 prints the name's quote mark as \"
+          echo "$badging" | grep -q "application-label:'בד.*ח סופה'"
           echo "$badging" | grep -q "launchable-activity: name='com.bdolach.sufa.MainActivity'"
 
       - name: Enable the emulator's hardware acceleration
