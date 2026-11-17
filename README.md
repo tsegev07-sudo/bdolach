@@ -18,6 +18,8 @@ www/                  ← the app itself (everything that goes into the APK)
     book.js           book details + the colour tabs
     white.js          white tab pages (the instructions for writing content are at the top)
 .github/workflows/android.yml   builds the APK on GitHub on every push
+tools/make-offline.py           builds dist/bdolach-offline.html, the one-file version for closed networks
+.github/workflows/offline.yml   builds that file on GitHub on every push
 icon/                           app icon: icon.png (1024×1024) + make-icons.py, which makes every size
 signing/debug.keystore          fixed signing key, so updates install over the old app
 capacitor.config.json           app id and name for Android
@@ -54,6 +56,18 @@ The app keeps the screen on while it is open, however long it goes without a tap
   because before iOS 18.4 the Wake Lock does nothing in an app added to the home screen.
 - Other browsers: the Wake Lock API.
 The build copies Capacitor's JavaScript into `www/js/capacitor.js`; that file is not kept in the repo.
+
+## Closed network (no internet, no web server)
+
+`python3 tools/make-offline.py` builds **`dist/bdolach-offline.html`**: the whole app in one file
+(styles, scripts, content and icon inside it; no internet, no install, no server).
+GitHub also builds it on every push: **Actions** → **Build offline file** → latest run → **Artifacts** → `bdolach-offline`.
+
+1. Move `bdolach-offline.html` to the closed computer through your network's approved transfer process.
+2. Double-click it to open it in Chrome or Edge (Windows, Linux or Mac).
+3. Ticks and night mode are kept by that browser on that computer.
+
+After any change in `www/`, run the script again and transfer the new file. It replaces the old one.
 
 ## Changing the app icon
 

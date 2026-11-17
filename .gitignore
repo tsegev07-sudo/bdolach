@@ -4,3 +4,5 @@ node_modules/
 *.apk
 # Copied from node_modules during the APK build
 www/js/capacitor.js
+# Built by tools/make-offline.py
+/dist/

@@ -1,0 +1,24 @@
+# Builds the single-file version of the app for computers with no internet
+# (closed / private networks). Download it from the run's page on GitHub:
+# Actions -> the run -> Artifacts -> bdolach-offline
+name: Build offline file
+
+on:
+  push:
+    branches: [main, 'claude/**']
+  workflow_dispatch:
+
+jobs:
+  offline:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build dist/bdolach-offline.html
+        run: python3 tools/make-offline.py
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bdolach-offline
+          path: dist/bdolach-offline.html
+          retention-days: 30
