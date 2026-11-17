@@ -500,6 +500,7 @@ bdi.code { white-space: nowrap; }
   justify-content: center;
   background: rgba(0, 0, 0, 0.45);
   z-index: 10;
+  cursor: pointer; /* iPhone / iPad only send taps on the dimmed area to "clickable" elements */
 }
 
 .sheet[hidden] { display: none; }
@@ -513,6 +514,21 @@ bdi.code { white-space: nowrap; }
   border-radius: 18px 18px 0 0;
   background: var(--bg);
   color: var(--text);
+  cursor: auto;
+  overscroll-behavior: contain; /* scrolling the list never scrolls or refreshes the page behind */
+}
+
+/* Grab bar at the top: the sheet can be swiped down to close it */
+.sheet-handle {
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  width: 44px;
+  height: 5px;
+  margin-left: -22px;
+  border-radius: 3px;
+  background: var(--muted);
+  opacity: 0.5;
 }
 
 :root:not([data-theme="night"]) .sheet-card { background: #ffffff; }

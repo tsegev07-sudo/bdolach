@@ -29,7 +29,8 @@
     night: $('nightBtn'),
     sheet: $('sheet'),
     sheetBody: $('sheetBody'),
-    sheetClose: $('sheetClose')
+    sheetClose: $('sheetClose'),
+    sheetCard: document.querySelector('.sheet-card')
   };
 
   // Ticked items, per page. Saved on the device, so they survive the app
@@ -347,11 +348,21 @@
 
   function openSheet(html) {
     els.sheetBody.innerHTML = html;
+    resetSheetDrag();
     els.sheet.hidden = false;
+    els.sheetCard.scrollTop = 0;
   }
 
   function closeSheet() {
     els.sheet.hidden = true;
+    resetSheetDrag();
+  }
+
+  // Undoes what a swipe-down left on the sheet (its offset, the faded backdrop)
+  function resetSheetDrag() {
+    els.sheetCard.style.transition = '';
+    els.sheetCard.style.transform = '';
+    els.sheet.style.backgroundColor = '';
   }
 
   /* ---------------- Navigation ---------------- */
@@ -536,9 +547,65 @@
 
 
   els.sheetClose.addEventListener('click', closeSheet);
+  // A tap on the dimmed area around the sheet closes it
   els.sheet.addEventListener('click', function (e) {
     if (e.target === els.sheet) closeSheet();
   });
+
+  // Swipe the sheet down to close it. Only when its list is scrolled to the
+  // top: further down, swiping down scrolls the list back up as usual.
+  // The sheet follows the finger; let go past a third of its height (or
+  // with a quick flick) and it slides away, otherwise it springs back.
+  var sheetDrag = null;
+  els.sheetCard.addEventListener('touchstart', function (e) {
+    if (e.touches.length !== 1 || els.sheetCard.scrollTop > 0) { sheetDrag = null; return; }
+    var t = e.touches[0];
+    sheetDrag = { x: t.clientX, y: t.clientY, dy: 0, active: false, lastY: t.clientY, lastTime: e.timeStamp, speed: 0 };
+  }, { passive: true });
+
+  els.sheetCard.addEventListener('touchmove', function (e) {
+    if (!sheetDrag) return;
+    var t = e.touches[0];
+    var dx = t.clientX - sheetDrag.x;
+    var dy = t.clientY - sheetDrag.y;
+    if (!sheetDrag.active) {
+      // Decide once whether this is a swipe down or a normal scroll / sideways move
+      if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
+      if (dy <= 0 || Math.abs(dy) < Math.abs(dx) || els.sheetCard.scrollTop > 0) { sheetDrag = null; return; }
+      sheetDrag.active = true;
+      els.sheetCard.style.transition = 'none';
+    }
+    e.preventDefault(); // no scrolling or pull-to-refresh while the sheet is dragged
+    sheetDrag.dy = Math.max(0, dy);
+    var dt = e.timeStamp - sheetDrag.lastTime;
+    if (dt > 0) sheetDrag.speed = (t.clientY - sheetDrag.lastY) / dt;
+    sheetDrag.lastY = t.clientY;
+    sheetDrag.lastTime = e.timeStamp;
+    els.sheetCard.style.transform = 'translateY(' + sheetDrag.dy + 'px)';
+    var fade = 1 - Math.min(1, sheetDrag.dy / els.sheetCard.offsetHeight);
+    els.sheet.style.backgroundColor = 'rgba(0, 0, 0, ' + (0.45 * fade).toFixed(3) + ')';
+  }, { passive: false });
+
+  function endSheetDrag() {
+    var drag = sheetDrag;
+    sheetDrag = null;
+    if (!drag || !drag.active) return;
+    var height = els.sheetCard.offsetHeight;
+    var away = drag.dy > height / 3 || (drag.speed > 0.5 && drag.dy > 30);
+    els.sheetCard.style.transition = 'transform 0.2s ease-out';
+    els.sheet.style.transition = 'background-color 0.2s ease-out';
+    if (away) {
+      els.sheetCard.style.transform = 'translateY(' + height + 'px)';
+      els.sheet.style.backgroundColor = 'rgba(0, 0, 0, 0)';
+      setTimeout(function () { els.sheet.style.transition = ''; closeSheet(); }, 200);
+    } else {
+      els.sheetCard.style.transform = '';
+      els.sheet.style.backgroundColor = '';
+      setTimeout(function () { els.sheet.style.transition = ''; els.sheetCard.style.transition = ''; }, 200);
+    }
+  }
+  els.sheetCard.addEventListener('touchend', endSheetDrag);
+  els.sheetCard.addEventListener('touchcancel', endSheetDrag);
 
   // Swipe between pages. As in a Hebrew book, the next page is on the left:
   // swipe right = next page, swipe left = previous page.
