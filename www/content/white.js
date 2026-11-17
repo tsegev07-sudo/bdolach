@@ -2,7 +2,7 @@
  * לשונית לבן — בד"ח מז"א (pages 180–182 of the PDF).
  *
  * How to write content
- * --------------------
+ * ====================
  * Each page has a number (num) and a list of blocks, shown top to bottom.
  *
  * Block types:

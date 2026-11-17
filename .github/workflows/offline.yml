@@ -17,8 +17,14 @@ jobs:
       - name: Build dist/bdolach-offline.html
         run: python3 tools/make-offline.py
 
+      # The same app as a PDF of plain-ASCII code, to copy out on the other side
+      - name: Build dist/bdolach.html.pdf
+        run: python3 tools/make-pdf-export.py
+
       - uses: actions/upload-artifact@v4
         with:
           name: bdolach-offline
-          path: dist/bdolach-offline.html
+          path: |
+            dist/bdolach-offline.html
+            dist/bdolach.html.pdf
           retention-days: 30

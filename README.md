@@ -19,7 +19,8 @@ www/                  ← the app itself (everything that goes into the APK)
     white.js          white tab pages (the instructions for writing content are at the top)
 .github/workflows/android.yml   builds the APK on GitHub on every push
 tools/make-offline.py           builds dist/bdolach-offline.html, the one-file version for closed networks
-.github/workflows/offline.yml   builds that file on GitHub on every push
+tools/make-pdf-export.py        builds dist/bdolach.html.pdf, the same app as a PDF of plain-ASCII code
+.github/workflows/offline.yml   builds both on GitHub on every push
 icon/                           app icon: icon.png (1024×1024) + make-icons.py, which makes every size
 signing/debug.keystore          fixed signing key, so updates install over the old app
 capacitor.config.json           app id and name for Android
@@ -68,6 +69,22 @@ GitHub also builds it on every push: **Actions** → **Build offline file** → 
 3. Ticks and night mode are kept by that browser on that computer.
 
 After any change in `www/`, run the script again and transfer the new file. It replaces the old one.
+
+### As a PDF (when only PDFs can go in)
+
+`python3 tools/make-pdf-export.py` builds **`dist/bdolach.html.pdf`**: the same one-file app, printed as code
+(GitHub puts it in the same `bdolach-offline` artifact). On the closed computer:
+
+1. Open the PDF → **Select all** → **Copy**.
+2. Paste into a new text file (Notepad) and delete the two lines above the code.
+3. Save it as **`bdolach.html`** (in Notepad: "Save as type: All files"), then double-click it.
+
+Copying from a PDF scrambles Hebrew (right to left) and breaks lines the page wrapped, so the exported code is
+plain ASCII: Hebrew is written as `א` (JavaScript), `\0005d0` (CSS) and `&#x5d0;` (HTML), which the
+browser shows as Hebrew again. Lines are kept short (long strings are split into `('...' + '...')`), comments
+are `/* */` only, and spaces that line things up in columns are removed, because PDF copy reorders text
+around such gaps. The script refuses to build if any of this can't be met (it says which line).
+It has no tab icon (the picture data would add pages to copy).
 
 ## Changing the app icon
 
