@@ -29,7 +29,6 @@
     night: $('nightBtn'),
     sheet: $('sheet'),
     sheetBody: $('sheetBody'),
-    sheetClose: $('sheetClose'),
     sheetCard: document.querySelector('.sheet-card')
   };
 
@@ -546,7 +545,10 @@
   });
 
 
-  els.sheetClose.addEventListener('click', closeSheet);
+  // Escape closes it from a keyboard
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && !els.sheet.hidden) closeSheet();
+  });
   // A tap on the dimmed area around the sheet closes it
   els.sheet.addEventListener('click', function (e) {
     if (e.target === els.sheet) closeSheet();
